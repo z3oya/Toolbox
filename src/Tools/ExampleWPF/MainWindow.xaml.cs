@@ -18,7 +18,7 @@ public partial class MainWindow : Window
     {
         var count = _counter.Increment();
         Title = $"Clicked {count} time(s).";
-        Circle.CircleColor = count % 2 == 0
+        Circle.CircleColor = _counter.IsEven
             ? Brushes.DodgerBlue
             : Brushes.OrangeRed;
     }

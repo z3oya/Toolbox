@@ -41,7 +41,7 @@ public partial class ExampleTool : UserControl
         {
             var count = _counter.Increment();
             _label.Text = $"Clicked {count} time(s).";
-            SetCircleColor(count % 2 == 0
+            SetCircleColor(_counter.IsEven
                 ? Color.DodgerBlue
                 : Color.OrangeRed);
         };
