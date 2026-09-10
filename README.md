@@ -26,3 +26,16 @@ Tools are standalone executables under ``src/Tools/<ToolName>`` and share logic 
 ````dotnet run --project src/Tools/Example````
 
 ````dotnet run --project src/Tools/ExampleWPF````
+
+## Package (installer with optional components)
+
+Requires Inno Setup 6 (``scoop install innosetup``).
+
+``powershell
+cd installer
+.\build-installer.ps1
+``
+
+Result: ``installer\dist\Toolbox-<version>-<flavor>-setup.exe`` (``framework`` or ``selfcontained``). During setup, users pick an install type (Full / Compact / Custom) and can check/uncheck each tool (Example, ExampleWPF) plus desktop shortcuts.
+
+Use ``-SelfContained`` for a larger installer that runs without the .NET 10 Desktop Runtime.
