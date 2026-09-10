@@ -1,23 +1,24 @@
 using Svg;
-using Toolbox.WinForms;
+using Toolbox.Core;
+using Toolbox.Ui.WinForms;
 
 namespace Toolbox.Tools.Example;
 
 /// <summary>
-/// Example tool hosted by the Toolbox main window.
+/// Example WinForms tool content.
 /// </summary>
 public partial class ExampleTool : UserControl
 {
     private readonly Label _label;
     private readonly Button _button;
     private readonly SvgControl _circle;
-    private int _clickCount;
+    private readonly ClickCounter _counter = new();
 
     public ExampleTool()
     {
         _label = new Label
         {
-            Text = "Example tool - click the button.",
+            Text = "Example WinForms tool - click the button.",
             AutoSize = true,
             Location = new Point(12, 12),
         };
@@ -38,9 +39,9 @@ public partial class ExampleTool : UserControl
 
         _button.Click += (sender, e) =>
         {
-            _clickCount++;
-            _label.Text = $"Clicked {_clickCount} time(s).";
-            SetCircleColor(_clickCount % 2 == 0
+            var count = _counter.Increment();
+            _label.Text = $"Clicked {count} time(s).";
+            SetCircleColor(count % 2 == 0
                 ? Color.DodgerBlue
                 : Color.OrangeRed);
         };

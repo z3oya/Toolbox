@@ -1,12 +1,14 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Toolbox.WinForms/Toolbox.WinForms.csproj" />
-    <Project Path="src/Toolbox/Toolbox.csproj" />
+    <Project Path="src/Toolbox.Core/Toolbox.Core.csproj" />
+    <Project Path="src/Toolbox.Ui.WinForms/Toolbox.Ui.WinForms.csproj" />
+    <Project Path="src/Toolbox.Ui.WPF/Toolbox.Ui.WPF.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Toolbox.Tests/Toolbox.Tests.csproj" />
   </Folder>
   <Folder Name="/Tools/">
     <Project Path="src/Tools/Example/Example.csproj" />
+    <Project Path="src/Tools/ExampleWPF/ExampleWPF.csproj" />
   </Folder>
 </Solution>

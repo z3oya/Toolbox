@@ -1,4 +1,4 @@
-namespace Toolbox;
+namespace Toolbox.Tools.Example;
 
 internal static class Program
 {
@@ -6,6 +6,6 @@ internal static class Program
     static void Main()
     {
         ApplicationConfiguration.Initialize();
-        Application.Run(new Form1());
+        Application.Run(new MainForm());
     }
 }

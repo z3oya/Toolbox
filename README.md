@@ -4,12 +4,14 @@ A basic C# solution structure.
 
 ## Structure
 
-- ``src/Toolbox`` - WinForms main application
-- ``src/Toolbox.WinForms`` - custom WinForms control library
-- ``src/Tools/Example`` - example tool (UserControl library)
+- ``src/Toolbox.Core`` - shared pure-logic library (no UI)
+- ``src/Toolbox.Ui.WinForms`` - WinForms control library (SVG control, etc.)
+- ``src/Toolbox.Ui.WPF`` - WPF control library (vector circle control, etc.)
+- ``src/Tools/Example`` - standalone WinForms tool (exe)
+- ``src/Tools/ExampleWPF`` - standalone WPF tool (exe)
 - ``tests/Toolbox.Tests`` - xUnit test project
 
-Add new tools under ``src/Tools/<ToolName>`` and reference them from the main app.
+Tools are standalone executables under ``src/Tools/<ToolName>`` and share logic via ``Toolbox.Core``.
 
 ## Build
 
@@ -21,4 +23,6 @@ Add new tools under ``src/Tools/<ToolName>`` and reference them from the main ap
 
 ## Run
 
-````dotnet run --project src/Toolbox````
+````dotnet run --project src/Tools/Example````
+
+````dotnet run --project src/Tools/ExampleWPF````

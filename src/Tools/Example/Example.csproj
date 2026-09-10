@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -8,7 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Toolbox.WinForms\Toolbox.WinForms.csproj" />
+    <ProjectReference Include="..\..\Toolbox.Ui.WinForms\Toolbox.Ui.WinForms.csproj" />
+    <ProjectReference Include="..\..\Toolbox.Core\Toolbox.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

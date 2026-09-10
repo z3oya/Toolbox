@@ -1,0 +1,11 @@
+<Window x:Class="ExampleWPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Toolbox.Ui.WPF;assembly=Toolbox.Ui.WPF"
+        Title="ExampleWPF" Height="320" Width="420">
+    <StackPanel Margin="12">
+        <TextBlock Text="Example WPF tool - click the button." />
+        <Button Content="Click me" Margin="0,12,0,0" Padding="12,4" Click="Button_Click" />
+        <ui:CircleControl x:Name="Circle" Width="128" Height="128" Margin="0,16,0,0" />
+    </StackPanel>
+</Window>

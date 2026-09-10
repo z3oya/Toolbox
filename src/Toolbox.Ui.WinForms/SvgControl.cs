@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Svg;
 
-namespace Toolbox.WinForms;
+namespace Toolbox.Ui.WinForms;
 
 /// <summary>
 /// A minimal control that renders an SVG vector image via SVG.NET + GDI+.
