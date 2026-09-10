@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Toolbox.WinForms/Toolbox.WinForms.csproj" />
     <Project Path="src/Toolbox/Toolbox.csproj" />
   </Folder>
   <Folder Name="/tests/">

@@ -5,6 +5,7 @@ A basic C# solution structure.
 ## Structure
 
 - ``src/Toolbox`` - WinForms main application
+- ``src/Toolbox.WinForms`` - custom WinForms control library
 - ``src/Tools/Example`` - example tool (UserControl library)
 - ``tests/Toolbox.Tests`` - xUnit test project
 
