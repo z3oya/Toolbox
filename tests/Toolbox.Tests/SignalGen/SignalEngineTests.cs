@@ -97,4 +97,36 @@ public class SignalEngineTests
         });
         Assert.Equal(0.0, engine.DebugCarrierPhase(1), 12);
     }
+
+    [Fact]
+    public async Task Render_concurrent_with_UpdateChannels_is_safe()
+    {
+        // Grow/shrink swap pattern concurrent with Render: the single _gate lock must
+        // keep every sample in [-1,1] and never throw (no torn array access).
+        var engine = new SignalEngine(48_000);
+        engine.UpdateChannels(new[] { new ChannelConfig { Waveform = WaveformKind.Dc, Amplitude = 0.1 } });
+        var buf = new float[480];
+        var stop = new ManualResetEventSlim(false);
+        var updater = Task.Run(() =>
+        {
+            try
+            {
+                for (int i = 0; i < 2_000; i++)
+                    engine.UpdateChannels(i % 2 == 0
+                        ? new[] { new ChannelConfig { Waveform = WaveformKind.Dc, Amplitude = 0.1 } }
+                        : new[] { new ChannelConfig { Waveform = WaveformKind.Dc, Amplitude = 0.1 },
+                                  new ChannelConfig { Waveform = WaveformKind.Dc, Amplitude = 0.2 } });
+            }
+            finally { stop.Set(); } // the main thread spins on stop: it must be set even if UpdateChannels throws
+        });
+        int renders = 0;
+        while (!stop.IsSet)
+        {
+            engine.Render(buf);
+            Assert.All(buf, s => Assert.True(s is >= -1f and <= 1f));
+            renders++;
+        }
+        Assert.True(renders > 0);
+        await updater.WaitAsync(TimeSpan.FromSeconds(10)); // rethrows an updater failure with its stack, unlike an opaque IsCompletedSuccessfully assert
+    }
 }
