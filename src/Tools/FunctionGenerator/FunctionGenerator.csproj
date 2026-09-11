@@ -1,18 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Toolbox.Tools.FunctionGenerator</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Svg" Version="3.4.8" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Toolbox.Core\Toolbox.Core.csproj" />
+    <ProjectReference Include="..\..\Toolbox.Ui.WinForms\Toolbox.Ui.WinForms.csproj" />
+    <ProjectReference Include="..\..\Toolbox.Core\Toolbox.Core.csproj" />
   </ItemGroup>
 
 </Project>

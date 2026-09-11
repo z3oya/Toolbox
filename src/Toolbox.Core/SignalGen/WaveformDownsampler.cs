@@ -6,7 +6,13 @@ public static class WaveformDownsampler
     /// <summary>Reduces the samples to <paramref name="bucketCount"/> min/max pairs, one per pixel column.</summary>
     /// <param name="samples">Input samples; empty input yields all-zero buckets (paints a flat line at zero). Non-finite samples are deliberately not validated (hot path); the caller owns validation — the engine clamps its output to [-1, 1].</param>
     /// <param name="bucketCount">Number of buckets to produce, typically the pixel width of the target view. Must be positive.</param>
-    /// <returns>One (min, max) pair per bucket; with fewer samples than buckets the extra buckets hold the last sample so the trace still spans the full width.</returns>
+    /// <returns>One (min, max) pair per bucket, tiled proportionally: bucket b covers the sample range
+    /// [floor(L*b/B), floor(L*(b+1)/B)). With more samples than buckets this decimates the signal into
+    /// per-column min/max pairs; with fewer samples than buckets the empty ranges hold the sample at
+    /// their start position, so the trace stretches across the full width with step-holds. A held-last-sample
+    /// tail is deliberately avoided: it is positionally unstable under noise (the tail jumps with the random
+    /// last sample), and a 1:1 sample-to-pixel mapping changes the effective timebase whenever the trigger
+    /// index moves between frames.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="bucketCount"/> is zero or negative.</exception>
     public static (float Min, float Max)[] MinMax(ReadOnlySpan<float> samples, int bucketCount)
     {
@@ -14,16 +20,9 @@ public static class WaveformDownsampler
         var buckets = new (float Min, float Max)[bucketCount];
         if (samples.Length == 0) return buckets;
 
-        if (samples.Length <= bucketCount) // fewer samples than buckets: hold last value
-        {
-            for (int b = 0; b < bucketCount; b++)
-            {
-                int idx = Math.Min(b, samples.Length - 1);
-                buckets[b] = (samples[idx], samples[idx]);
-            }
-            return buckets;
-        }
-
+        // One proportional floor-tiling loop for every length: an empty range (start == end,
+        // only possible when samples < buckets) holds samples[start], so values step at
+        // proportional pixel positions and the trace always spans the full width.
         for (int b = 0; b < bucketCount; b++)
         {
             int start = (int)((long)samples.Length * b / bucketCount);

@@ -38,11 +38,13 @@ Name: "custom"; Description: "Custom selection"; Flags: iscustom
 [Components]
 Name: "example"; Description: "Example tool (WinForms)"; Types: full compact custom
 Name: "examplewpf"; Description: "ExampleWPF tool (WPF)"; Types: full custom
+Name: "funcgen"; Description: "Function Generator (UDP signal generator)"; Types: full custom
 
 ; ---- Additional optional tasks ----
 [Tasks]
 Name: "desktopicon_example"; Description: "Create a &desktop shortcut for Example"; Components: example; Flags: unchecked
 Name: "desktopicon_examplewpf"; Description: "Create a &desktop shortcut for ExampleWPF"; Components: examplewpf; Flags: unchecked
+Name: "desktopicon_funcgen"; Description: "Create a &desktop shortcut for Function Generator"; Components: funcgen; Flags: unchecked
 
 ; ---- Flat layout: exes and shared libraries (Toolbox.Core.dll etc.) side by side in {app} ----
 [Files]
@@ -54,8 +56,12 @@ Source: "publish\App\ExampleWPF.exe"; DestDir: "{app}"; Components: examplewpf; 
 Source: "publish\App\ExampleWPF.dll"; DestDir: "{app}"; Components: examplewpf; Flags: ignoreversion
 Source: "publish\App\ExampleWPF.deps.json"; DestDir: "{app}"; Components: examplewpf; Flags: ignoreversion
 Source: "publish\App\ExampleWPF.runtimeconfig.json"; DestDir: "{app}"; Components: examplewpf; Flags: ignoreversion
-Source: "publish\App\Toolbox.Core.dll"; DestDir: "{app}"; Components: example examplewpf; Flags: ignoreversion
-Source: "publish\App\Toolbox.Ui.WinForms.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion
+Source: "publish\App\FunctionGenerator.exe"; DestDir: "{app}"; Components: funcgen; Flags: ignoreversion
+Source: "publish\App\FunctionGenerator.dll"; DestDir: "{app}"; Components: funcgen; Flags: ignoreversion
+Source: "publish\App\FunctionGenerator.deps.json"; DestDir: "{app}"; Components: funcgen; Flags: ignoreversion
+Source: "publish\App\FunctionGenerator.runtimeconfig.json"; DestDir: "{app}"; Components: funcgen; Flags: ignoreversion
+Source: "publish\App\Toolbox.Core.dll"; DestDir: "{app}"; Components: example examplewpf funcgen; Flags: ignoreversion
+Source: "publish\App\Toolbox.Ui.WinForms.dll"; DestDir: "{app}"; Components: example funcgen; Flags: ignoreversion
 Source: "publish\App\Toolbox.Ui.WPF.dll"; DestDir: "{app}"; Components: examplewpf; Flags: ignoreversion
 Source: "publish\App\Svg.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion
 Source: "publish\App\ExCSS.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion
@@ -64,6 +70,8 @@ Source: "publish\App\Assets\*"; DestDir: "{app}\Assets"; Components: example; Fl
 [Icons]
 Name: "{group}\Example (WinForms)"; Filename: "{app}\Example.exe"; Components: example
 Name: "{group}\ExampleWPF"; Filename: "{app}\ExampleWPF.exe"; Components: examplewpf
+Name: "{group}\Function Generator"; Filename: "{app}\FunctionGenerator.exe"; Components: funcgen
 Name: "{autodesktop}\Example (WinForms)"; Filename: "{app}\Example.exe"; Tasks: desktopicon_example
 Name: "{autodesktop}\ExampleWPF"; Filename: "{app}\ExampleWPF.exe"; Tasks: desktopicon_examplewpf
+Name: "{autodesktop}\Function Generator"; Filename: "{app}\FunctionGenerator.exe"; Tasks: desktopicon_funcgen
 
