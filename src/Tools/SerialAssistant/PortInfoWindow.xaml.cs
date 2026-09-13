@@ -1,0 +1,103 @@
+using System.Management;
+using System.Text.RegularExpressions;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace Toolbox.Tools.SerialAssistant;
+
+/// <summary>One serial port device as reported by WMI (Win32_PnPEntity).</summary>
+internal sealed record PortInfoEntry(
+    string PortName,
+    string Caption,
+    string Description,
+    string Manufacturer,
+    string Status,
+    uint ConfigManagerErrorCode,
+    string PnpDeviceId)
+{
+    /// <summary>0 means working; anything else is a CM error code worth showing next to the number.</summary>
+    public string ConfigState => ConfigManagerErrorCode == 0
+        ? "0 (working properly)"
+        : ConfigManagerErrorCode.ToString();
+}
+
+/// <summary>Serial device browser: COM names on the left, everything else on the right.
+/// Data comes from WMI, so this lives in the tool exe (Windows IO) like SystemSerialTransport.
+/// Class is public (the XAML-generated partial is), the constructor stays internal.</summary>
+public sealed partial class PortInfoWindow : Window
+{
+    private sealed record DetailRow(string Property, string Value);
+
+    internal PortInfoWindow(IReadOnlyList<PortInfoEntry> entries)
+    {
+        InitializeComponent();
+        LoadEntries(entries);
+    }
+
+    private void LoadEntries(IReadOnlyList<PortInfoEntry> entries)
+    {
+        DevicesList.ItemsSource = entries.OrderBy(e => PortNumber(e.PortName)).ToList();
+        if (DevicesList.Items.Count > 0)
+            DevicesList.SelectedIndex = 0;
+        else
+            DetailsList.ItemsSource = null;
+    }
+
+    private void ShowDetails()
+    {
+        if (DevicesList.SelectedItem is not PortInfoEntry entry)
+        {
+            DetailsList.ItemsSource = null;
+            return;
+        }
+        static string OrDash(string value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+        DetailsList.ItemsSource = new[]
+        {
+            new DetailRow("Caption", OrDash(entry.Caption)),
+            new DetailRow("Description", OrDash(entry.Description)),
+            new DetailRow("Manufacturer", OrDash(entry.Manufacturer)),
+            new DetailRow("Status", OrDash(entry.Status)),
+            new DetailRow("Config state", entry.ConfigState),
+            new DetailRow("PNP device ID", OrDash(entry.PnpDeviceId)),
+        };
+    }
+
+    private static int PortNumber(string portName) =>
+        int.TryParse(Digits().Match(portName).Value, out int n) ? n : int.MaxValue;
+
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex Digits();
+
+    /// <summary>Serial devices via WMI: entities whose caption carries a "(COMx)" suffix.
+    /// Synchronous by design — a local WMI query takes a few hundred ms for a details dialog.</summary>
+    internal static List<PortInfoEntry> QueryDevices()
+    {
+        var list = new List<PortInfoEntry>();
+        using var searcher = new ManagementObjectSearcher(
+            "SELECT Caption, Description, Manufacturer, Status, ConfigManagerErrorCode, PNPDeviceID " +
+            "FROM Win32_PnPEntity WHERE Caption LIKE '%(COM%'");
+        foreach (var raw in searcher.Get())
+        {
+            if (raw is not ManagementObject entity) continue;
+            string caption = entity["Caption"]?.ToString() ?? "";
+            var match = ComPortName().Match(caption);
+            if (!match.Success) continue;
+            list.Add(new PortInfoEntry(
+                match.Groups[1].Value,
+                caption,
+                entity["Description"]?.ToString() ?? "",
+                entity["Manufacturer"]?.ToString() ?? "",
+                entity["Status"]?.ToString() ?? "",
+                entity["ConfigManagerErrorCode"] is uint code ? code : 0,
+                entity["PNPDeviceID"]?.ToString() ?? ""));
+        }
+        return list;
+    }
+
+    [GeneratedRegex(@"\((COM\d+)\)", RegexOptions.IgnoreCase)]
+    private static partial Regex ComPortName();
+
+    private void DevicesList_SelectionChanged(object sender, SelectionChangedEventArgs e) => ShowDetails();
+
+    private void Refresh_Click(object sender, RoutedEventArgs e) => LoadEntries(QueryDevices());
+}
