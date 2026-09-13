@@ -14,7 +14,8 @@ public partial class MainForm : Form
     private const int StyleRx = 1; // custom styles on top of Style.Default
     private const int StyleTx = 2;
 
-    private readonly ComboBox _port = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _port = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly Button _portInfo = new() { Text = "…", AutoSize = false, Width = 30, Dock = DockStyle.Right }; // device details dialog
     private readonly Button _refresh = new() { Text = "Refresh", AutoSize = true };
     private readonly ComboBox _baud = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDown }; // editable: exotic rates allowed
     private readonly ComboBox _dataBits = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
@@ -99,9 +100,14 @@ public partial class MainForm : Form
         // Right column: connection settings stacked top-down.
         var right = new Panel { Dock = DockStyle.Right, Width = 170, Padding = new Padding(8) };
         var settings = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false };
+        // Fixed-width info button docked right of the combo: FlowLayout + AutoSize let the
+        // "…" button overflow the 140px row and get clipped, so keep the layout deterministic.
+        var portRow = new Panel { Width = 140, Height = 28 };
+        portRow.Controls.Add(_port);
+        portRow.Controls.Add(_portInfo);
         settings.Controls.AddRange(new Control[]
         {
-            FieldLabel("Port"), _port, _refresh,
+            FieldLabel("Port"), portRow, _refresh,
             FieldLabel("Baud"), _baud,
             FieldLabel("Data bits"), _dataBits,
             FieldLabel("Stop bits"), _stopBits,
@@ -152,6 +158,7 @@ public partial class MainForm : Form
         Controls.Add(_statusBar);
 
         _refresh.Click += (_, _) => RefreshPorts();
+        _portInfo.Click += (_, _) => new PortInfoForm(PortInfoForm.QueryDevices()).ShowDialog(this);
         _connect.Click += (_, _) => { if (_session is null) Connect(); else ClosePort(); };
         _send.Click += (_, _) => Send();
         _txEditor.KeyDown += (_, e) =>
