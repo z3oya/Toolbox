@@ -1,4 +1,5 @@
 using System.Management;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,15 +24,48 @@ internal sealed record PortInfoEntry(
 
 /// <summary>Serial device browser: COM names on the left, everything else on the right.
 /// Data comes from WMI, so this lives in the tool exe (Windows IO) like SystemSerialTransport.
+/// The window opens empty and queries WMI on a background thread (a full Win32_PnPEntity scan
+/// takes a second or more); <see cref="RefreshAsync"/> keeps the UI responsive while it runs.
 /// Class is public (the XAML-generated partial is), the constructor stays internal.</summary>
 public sealed partial class PortInfoWindow : Window
 {
     private sealed record DetailRow(string Property, string Value);
 
-    internal PortInfoWindow(IReadOnlyList<PortInfoEntry> entries)
+    private bool _loading;
+
+    internal PortInfoWindow()
     {
         InitializeComponent();
-        LoadEntries(entries);
+        _ = RefreshAsync(); // starts before ShowDialog; the continuation lands on the UI thread
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_loading) return;
+        _loading = true;
+        RefreshButton.IsEnabled = false;
+        LoadingText.Text = "Querying devices…";
+        LoadingText.Visibility = Visibility.Visible;
+        DevicesList.ItemsSource = null;
+        DetailsList.ItemsSource = null;
+        SelectButton.IsEnabled = false;
+        try
+        {
+            var entries = await Task.Run(QueryDevices);
+            if (IsLoaded) LoadEntries(entries); // skip if the window was closed mid-query
+            LoadingText.Visibility = Visibility.Collapsed; // collapse only on success; a failure message stays up
+        }
+        catch (Exception ex) when (ex is ManagementException or COMException)
+        {
+            // WMI can fail outright (service disabled, repository corruption);
+            // show why the list is empty instead of failing silently.
+            LoadingText.Text = $"Device query failed: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+            RefreshButton.IsEnabled = true;
+        }
     }
 
     private void LoadEntries(IReadOnlyList<PortInfoEntry> entries)
@@ -74,7 +108,7 @@ public sealed partial class PortInfoWindow : Window
     private static partial Regex Digits();
 
     /// <summary>Serial devices via WMI: entities whose caption carries a "(COMx)" suffix.
-    /// Synchronous by design — a local WMI query takes a few hundred ms for a details dialog.</summary>
+    /// Synchronous on purpose — it runs inside Task.Run from RefreshAsync, never on the UI thread.</summary>
     internal static List<PortInfoEntry> QueryDevices()
     {
         var list = new List<PortInfoEntry>();
@@ -110,5 +144,5 @@ public sealed partial class PortInfoWindow : Window
             DialogResult = true; // closes; the owner applies SelectedPort to its port combo
     }
 
-    private void Refresh_Click(object sender, RoutedEventArgs e) => LoadEntries(QueryDevices());
+    private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
 }

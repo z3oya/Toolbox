@@ -54,7 +54,7 @@
             </Setter.Value>
         </Setter>
         <Style.Triggers>
-            <!-- Covers the 7 controls disabled while connected; Opacity works
+            <!-- Covers the 8 controls disabled while connected; Opacity works
                  regardless of what the template renders. -->
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.45"/>

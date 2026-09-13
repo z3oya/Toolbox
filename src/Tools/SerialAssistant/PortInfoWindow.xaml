@@ -13,6 +13,9 @@
                     MinWidth="80" Margin="8,0,0,0" IsEnabled="False"
                     IsDefault="True" Click="Select_Click"/>
         </StackPanel>
+        <!-- WMI takes a second or more: the window shows immediately and this says why it is empty. -->
+        <TextBlock x:Name="LoadingText" DockPanel.Dock="Top" Text="Querying devices…"
+                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6" Visibility="Collapsed"/>
         <!-- Stacked, full-width lists; column widths are fixed (no splitter, no grippers). -->
         <Grid>
             <Grid.RowDefinitions>

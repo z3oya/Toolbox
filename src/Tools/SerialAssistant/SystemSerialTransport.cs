@@ -9,7 +9,13 @@ namespace Toolbox.Tools.SerialAssistant;
 /// stopping the DataReceived storm after an unplug; Open/Write failures propagate synchronously to the caller.</summary>
 internal sealed class SystemSerialTransport : ISerialTransport
 {
+    // A stalled driver (flow control paused, half-dead USB adapter) otherwise blocks Write
+    // forever - the SerialPort default is InfiniteTimeout.
+    private const int MinWriteTimeoutMs = 2_000;
+    private const int WriteHeadroomMs = 1_000;
+
     private SerialPort? _port;
+    private int _baudRate;
 
     public bool IsOpen => _port is { IsOpen: true };
 
@@ -29,6 +35,7 @@ internal sealed class SystemSerialTransport : ISerialTransport
             Handshake = MapFlowControl(config.FlowControl),
             ReadBufferSize = 64 * 1024,
         };
+        _baudRate = Math.Max(1, config.BaudRate); // scales the per-write timeout below
         port.DataReceived += OnDataReceived;
         _port = port; // visible to OnDataReceived before Open() can fire it
         try
@@ -54,7 +61,20 @@ internal sealed class SystemSerialTransport : ISerialTransport
     {
         var port = _port ?? throw new IOException("The port is not open.");
         var buffer = data.ToArray(); // SerialPort.Write has no span overload
-        port.Write(buffer, 0, buffer.Length);
+        try
+        {
+            // Wire-time floor for the payload (10 bits per byte: start + 8 data + stop) plus
+            // headroom, so a big send at a low baud rate does not time out spuriously.
+            // 64-bit math: the int product would wrap past ~210 KB payloads.
+            long timeoutMs = Math.Max(MinWriteTimeoutMs, 10L * buffer.Length * 1000 / _baudRate + WriteHeadroomMs);
+            port.WriteTimeout = (int)Math.Min(int.MaxValue, timeoutMs);
+            port.Write(buffer, 0, buffer.Length);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
+        {
+            // The port was self-closed by an RX failure (or the user) while this write raced it.
+            throw new IOException("The port is no longer open.", ex);
+        }
     }
 
     public void Dispose() => Close();

@@ -204,7 +204,7 @@ public partial class MainWindow : Window
         ConnectButton.Content = "Disconnect";
         ConnectedDot.Fill = (Brush)FindResource("GreenBrush");
         StatusInfo.Text = ConnectionSummary(config);
-        foreach (var box in new Control[] { PortBox, RefreshButton, BaudBox, DataBitsBox, StopBitsBox, ParityBox, FlowBox })
+        foreach (var box in new Control[] { PortBox, PortInfoButton, RefreshButton, BaudBox, DataBitsBox, StopBitsBox, ParityBox, FlowBox })
             box.IsEnabled = false;
         _uiTimer.Start();
     }
@@ -222,7 +222,7 @@ public partial class MainWindow : Window
         StatusInfo.Text = "Not connected";
         ConnectButton.Content = "Connect";
         ConnectedDot.Fill = (Brush)FindResource("SeparatorBrush");
-        foreach (var box in new Control[] { PortBox, RefreshButton, BaudBox, DataBitsBox, StopBitsBox, ParityBox, FlowBox })
+        foreach (var box in new Control[] { PortBox, PortInfoButton, RefreshButton, BaudBox, DataBitsBox, StopBitsBox, ParityBox, FlowBox })
             box.IsEnabled = true;
     }
 
@@ -252,7 +252,11 @@ public partial class MainWindow : Window
         _ => "no flow",
     };
 
-    private void Send()
+    private bool _sendBusy; // one write in flight; extra clicks (or Ctrl+Enter) are ignored
+
+    // The write runs on the thread pool: even a write that blocks until its timeout can never
+    // freeze the window (Send is called from the UI-thread button/keyboard handlers).
+    private async void Send()
     {
         var session = _session;
         if (session is null || !session.IsOpen)
@@ -260,33 +264,53 @@ public partial class MainWindow : Window
             ShowMessage("Not connected.", MessageBoxImage.Warning);
             return;
         }
-        try
+
+        byte[] payload;
+        if (TxHexCheck.IsChecked == true)
         {
-            if (TxHexCheck.IsChecked == true)
+            if (!HexCodec.TryParse(TxEditor.Text, out payload, out var error))
             {
-                if (!HexCodec.TryParse(TxEditor.Text, out var bytes, out var error))
-                {
-                    ShowMessage($"Invalid hex input: {error}", MessageBoxImage.Warning);
-                    return;
-                }
-                session.Send(bytes); // parses-to-empty is a silent no-op, like empty text
-            }
-            else
-            {
-                var text = TxEditor.Text + Selected<string>(EolBox);
-                session.SendText(text, _encodingKind);
+                ShowMessage($"Invalid hex input: {error}", MessageBoxImage.Warning);
+                return;
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        else
         {
-            HandlePortFailure(ex); // the write hit a dead port: same treatment as a receive-side failure
+            payload = TextCodec.Resolve(_encodingKind).GetBytes(TxEditor.Text + Selected<string>(EolBox));
+        }
+        if (_sendBusy) return; // queued sends would pile up behind the session lock
+        _sendBusy = true;
+        try
+        {
+            await Task.Run(() => session.Send(payload)); // parses-to-empty is a silent no-op, like empty text
+        }
+        catch (TimeoutException)
+        {
+            // Not fatal: the device is paused by flow control or stopped draining its buffer.
+            ShowMessage("The write timed out: the device is not accepting data (flow control paused or stalled).",
+                MessageBoxImage.Warning);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            // Dead port or unplug race — unless the user already swapped connections
+            // (disconnect + reconnect while this write was in flight): leave the new one alone.
+            if (ReferenceEquals(session, _session)) HandlePortFailure(ex);
+        }
+        finally
+        {
+            _sendBusy = false;
         }
     }
 
     // TransportError arrives on a background thread — the UI part must run on the UI thread.
+    // The sender check drops a queued failure from a session the user already replaced
+    // (disconnect + reconnect racing an in-flight error from the old port).
     private void OnTransportError(object? sender, Exception ex)
     {
-        Dispatcher.BeginInvoke(() => HandlePortFailure(ex));
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (ReferenceEquals(sender, _session)) HandlePortFailure(ex);
+        });
     }
 
     private void HandlePortFailure(Exception ex)
@@ -450,7 +474,8 @@ public partial class MainWindow : Window
 
     private void PortInfo_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new PortInfoWindow(PortInfoWindow.QueryDevices()) { Owner = this };
+        // Opens instantly; the WMI query runs in the background and fills the list when done.
+        var dlg = new PortInfoWindow { Owner = this };
         dlg.ShowDialog();
         if (dlg.DialogResult == true && dlg.SelectedPort is string port)
         {
