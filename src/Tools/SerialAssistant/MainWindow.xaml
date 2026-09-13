@@ -5,27 +5,36 @@
         Title="Serial Assistant" Width="1000" Height="680" MinWidth="780" MinHeight="520"
         Background="{StaticResource WindowBgBrush}">
     <DockPanel>
-        <!-- Top config bar: chrome strip; wraps to a second line when the window narrows. -->
+        <!-- Top config bar: chrome strip; config controls wrap to a second line when the
+             window narrows, while Connect stays pinned to the right edge. -->
         <Border DockPanel.Dock="Top" Background="{StaticResource ChromeBrush}"
                 BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,0,0,1"
                 Padding="10,7,10,5">
-            <WrapPanel>
-                <TextBlock Text="Port" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,6,0"/>
-                <ComboBox x:Name="PortBox" MinWidth="100"/>
-                <Button x:Name="PortInfoButton" Content="…" Width="40" Margin="2,0,0,0" Click="PortInfo_Click"/>
-                <Button x:Name="RefreshButton" Content="Refresh" Margin="8,0,0,0" Click="Refresh_Click"/>
-                <TextBlock Text="Baud" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" Margin="16,0,6,0"/>
-                <ComboBox x:Name="BaudBox" MinWidth="80" IsEditable="True"/>
-                <ComboBox x:Name="DataBitsBox" MinWidth="46" Margin="8,0,0,0"/>
-                <ComboBox x:Name="StopBitsBox" MinWidth="54" Margin="8,0,0,0"/>
-                <ComboBox x:Name="ParityBox" MinWidth="68" Margin="8,0,0,0"/>
-                <ComboBox x:Name="FlowBox" MinWidth="96" Margin="8,0,0,0"/>
-                <Button x:Name="ConnectButton" Content="Connect" Style="{StaticResource PrimaryButton}"
-                        Width="110" Margin="16,0,0,0" Click="Connect_Click"/>
-                <!-- Connection indicator: gray at rest, green while the port is open. -->
-                <Ellipse x:Name="ConnectedDot" Width="10" Height="10" Margin="8,0,0,0"
-                         VerticalAlignment="Center" Fill="{StaticResource SeparatorBrush}"/>
-            </WrapPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <WrapPanel Grid.Column="0">
+                    <TextBlock Text="Port" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="PortBox" MinWidth="100"/>
+                    <Button x:Name="PortInfoButton" Content="…" Width="40" Margin="2,0,0,0" Click="PortInfo_Click"/>
+                    <Button x:Name="RefreshButton" Content="Refresh" Margin="8,0,0,0" Click="Refresh_Click"/>
+                    <TextBlock Text="Baud" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" Margin="16,0,6,0"/>
+                    <ComboBox x:Name="BaudBox" MinWidth="80" IsEditable="True"/>
+                    <ComboBox x:Name="DataBitsBox" MinWidth="46" Margin="8,0,0,0"/>
+                    <ComboBox x:Name="StopBitsBox" MinWidth="54" Margin="8,0,0,0"/>
+                    <ComboBox x:Name="ParityBox" MinWidth="68" Margin="8,0,0,0"/>
+                    <ComboBox x:Name="FlowBox" MinWidth="96" Margin="8,0,0,0"/>
+                </WrapPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Button x:Name="ConnectButton" Content="Connect" Style="{StaticResource PrimaryButton}"
+                            Width="110" Click="Connect_Click"/>
+                    <!-- Connection indicator: gray at rest, green while the port is open. -->
+                    <Ellipse x:Name="ConnectedDot" Width="10" Height="10" Margin="8,0,0,0"
+                             VerticalAlignment="Center" Fill="{StaticResource SeparatorBrush}"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- Bottom status bar. The last StatusBarItem fills the remaining width (default
