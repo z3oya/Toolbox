@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- 统一主图标（Toolbox Base） -->
+  <g stroke="#2C3E50" stroke-width="2.5">
+    <path d="M22 14V11C22 9.34 23.34 8 25 8H35C36.66 8 38 9.34 38 11V14" />
+    <rect x="6" y="14" width="48" height="38" rx="4" />
+    <line x1="6" y1="26" x2="54" y2="26" />
+    <rect x="26" y="23" width="8" height="6" rx="1" fill="#2C3E50" />
+  </g>
+
+  <!-- 右下角徽章：函数发生器 (Function Generator) -->
+  <g transform="translate(36, 36)">
+    <!-- 白色遮罩背景 -->
+    <circle cx="12" cy="12" r="11" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="3" />
+
+    <!-- 波形符号：正弦波 + 方波 + 三角波 (Sine + Square + Triangle) -->
+    <g stroke="#E67E22" stroke-width="1.8">
+      <!-- 上部：方波 (Square Wave) 示意 -->
+      <path d="M5 9H9V6H15V9H19" />
+
+      <!-- 下部：正弦波 (Sine Wave) 与 三角波 (Triangle Wave) 混合 -->
+      <!-- 混合波形从左到右：半个正弦，一个三角 -->
+      <path d="M5 15 C 6.5 12, 8.5 12, 10 15 L 14.5 20 L 19 15" />
+    </g>
+  </g>
+</svg>

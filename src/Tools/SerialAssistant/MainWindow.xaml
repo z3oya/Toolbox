@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
         Title="Serial Assistant" Width="1000" Height="680" MinWidth="780" MinHeight="520"
+        Icon="app.ico"
         Background="{StaticResource WindowBgBrush}">
     <DockPanel>
         <!-- Top config bar: chrome strip; config controls wrap to a second line when the

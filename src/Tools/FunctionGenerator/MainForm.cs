@@ -35,6 +35,7 @@ public partial class MainForm : Form
     {
         Text = "Function Generator (UDP)";
         ClientSize = new Size(800, 620);
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
 
         _channels.Add(new ChannelConfig { Name = "Ch1", Waveform = WaveformKind.Sine, Frequency = 1000, Amplitude = 0.5 });
         _channels.Add(new ChannelConfig { Name = "Ch2", Waveform = WaveformKind.Sine, Frequency = 2000, Amplitude = 0.3, Enabled = false });

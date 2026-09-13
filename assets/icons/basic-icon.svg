@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="#2C3E50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- 提手 -->
+  <path d="M24 16V12C24 9.79 25.79 8 28 8H36C38.21 8 40 9.79 40 12V16" />
+  <!-- 箱体主体 -->
+  <rect x="8" y="16" width="48" height="40" rx="4" />
+  <!-- 中间锁扣与横梁分割线 -->
+  <line x1="8" y1="28" x2="56" y2="28" />
+  <rect x="28" y="25" width="8" height="6" rx="1" fill="#2C3E50" />
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- 统一主图标（Toolbox Base） -->
+  <g stroke="#2C3E50" stroke-width="2.5">
+    <path d="M22 14V11C22 9.34 23.34 8 25 8H35C36.66 8 38 9.34 38 11V14" />
+    <rect x="6" y="14" width="48" height="38" rx="4" />
+    <line x1="6" y1="26" x2="54" y2="26" />
+    <rect x="26" y="23" width="8" height="6" rx="1" fill="#2C3E50" />
+  </g>
+
+  <!-- 右下角徽章：串口/DB9 接口 (Serial Port) -->
+  <g transform="translate(36, 36)">
+    <!-- 白色遮罩背景 -->
+    <circle cx="12" cy="12" r="11" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="3" />
+
+    <!-- DB9 梯形外壳轮廓 -->
+    <path d="M5 8H19L17.5 16H6.5L5 8Z" stroke="#00ADB5" stroke-width="2" fill="none" />
+
+    <!-- 串口引脚点阵 (经典 5 针示意) -->
+    <circle cx="8" cy="11" r="0.75" fill="#00ADB5" stroke="none" />
+    <circle cx="10" cy="11" r="0.75" fill="#00ADB5" stroke="none" />
+    <circle cx="12" cy="11" r="0.75" fill="#00ADB5" stroke="none" />
+    <circle cx="14" cy="11" r="0.75" fill="#00ADB5" stroke="none" />
+    <circle cx="16" cy="11" r="0.75" fill="#00ADB5" stroke="none" />
+  </g>
+</svg>
