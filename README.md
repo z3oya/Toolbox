@@ -42,7 +42,7 @@ cd installer
 .\build-installer.ps1
 ``
 
-Result: ``installer\dist\Toolbox-<version>-<flavor>-setup.exe`` (``framework`` or ``selfcontained``). During setup, users pick an install type (Full / Compact / Custom) and can check/uncheck each tool (Example, ExampleWPF, Function Generator) plus desktop shortcuts.
+Result: ``installer\dist\Toolbox-<version>-<flavor>-setup.exe`` (``framework`` or ``selfcontained``). During setup, users pick an install type (Full / Compact / Custom) and can check/uncheck each tool (Example, ExampleWPF, Function Generator, Serial Assistant) plus desktop shortcuts.
 
 Use ``-SelfContained`` for a larger installer that runs without the .NET 10 Desktop Runtime.
 
