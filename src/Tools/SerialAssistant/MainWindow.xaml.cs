@@ -18,8 +18,16 @@ public partial class MainWindow : Window
     private const int MaxLogChars = 1_000_000; // trim head beyond this; the editor virtualizes so this only bounds memory
     private const int KeptLogChars = 500_000;
 
-    private static readonly Brush RxBrush = Brushes.MidnightBlue;
-    private static readonly Brush TxBrush = Brushes.Firebrick;
+    // macOS palette: RX near-black text, TX accent blue (docs/plans/2026-09-13-serialassistant-macos-theme-design.md).
+    private static readonly Brush RxBrush = FrozenBrush(0x1C, 0x1C, 0x1E);
+    private static readonly Brush TxBrush = FrozenBrush(0x00, 0x7A, 0xFF);
+
+    private static Brush FrozenBrush(byte r, byte g, byte b)
+    {
+        var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+        brush.Freeze(); // immutable and shareable across render threads
+        return brush;
+    }
 
     private readonly DispatcherTimer _uiTimer = new()
     {
@@ -47,6 +55,15 @@ public partial class MainWindow : Window
         };
         _uiTimer.Tick += (_, _) => DrainAndRender();
         RefreshPorts();
+        Loaded += (_, _) =>
+        {
+            // The option groups must never clip their controls: pin each row's minimum
+            // height to the group's fully-measured height instead of a hardcoded estimate.
+            ReceiveGroup.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            ReceiveRow.MinHeight = Math.Ceiling(ReceiveGroup.DesiredSize.Height);
+            SendGroup.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            SendRow.MinHeight = Math.Ceiling(SendGroup.DesiredSize.Height);
+        };
     }
 
     // Decouples combo labels from values: SelectedItem carries the value itself,
@@ -128,16 +145,22 @@ public partial class MainWindow : Window
         PortBox.SelectedIndex = i >= 0 ? i : 0;
     }
 
+    // Themed replacement for MessageBox: the system dialog cannot pick up the app styles.
+    private void ShowMessage(string message, MessageBoxImage severity)
+    {
+        new MessageWindow { Owner = this, Title = Title, Message = message, Severity = severity }.ShowDialog();
+    }
+
     private void Connect()
     {
         if (PortBox.SelectedItem is null)
         {
-            MessageBox.Show(this, "No port selected.", Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowMessage("No port selected.", MessageBoxImage.Warning);
             return;
         }
         if (!int.TryParse(BaudBox.Text.Trim(), out int baud))
         {
-            MessageBox.Show(this, "Invalid baud rate.", Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowMessage("Invalid baud rate.", MessageBoxImage.Warning);
             return;
         }
 
@@ -162,7 +185,7 @@ public partial class MainWindow : Window
         {
             session.Dispose();
             transport.Dispose();
-            MessageBox.Show(this, $"Cannot open {config.PortName}: {ex.Message}", Title, MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowMessage($"Cannot open {config.PortName}: {ex.Message}", MessageBoxImage.Error);
             return;
         }
 
@@ -222,7 +245,7 @@ public partial class MainWindow : Window
         var session = _session;
         if (session is null || !session.IsOpen)
         {
-            MessageBox.Show(this, "Not connected.", Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowMessage("Not connected.", MessageBoxImage.Warning);
             return;
         }
         try
@@ -231,7 +254,7 @@ public partial class MainWindow : Window
             {
                 if (!HexCodec.TryParse(TxEditor.Text, out var bytes, out var error))
                 {
-                    MessageBox.Show(this, $"Invalid hex input: {error}", Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowMessage($"Invalid hex input: {error}", MessageBoxImage.Warning);
                     return;
                 }
                 session.Send(bytes); // parses-to-empty is a silent no-op, like empty text
@@ -257,7 +280,7 @@ public partial class MainWindow : Window
     private void HandlePortFailure(Exception ex)
     {
         if (_session is null) return; // already torn down (user disconnect or window closed)
-        MessageBox.Show(this, $"Port error: {ex.Message}", Title, MessageBoxButton.OK, MessageBoxImage.Error);
+        ShowMessage($"Port error: {ex.Message}", MessageBoxImage.Error);
         ClosePort();
     }
 
@@ -361,7 +384,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Save failed: {ex.Message}", Title, MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowMessage($"Save failed: {ex.Message}", MessageBoxImage.Error);
         }
     }
 
@@ -377,7 +400,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Load failed: {ex.Message}", Title, MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowMessage($"Load failed: {ex.Message}", MessageBoxImage.Error);
         }
     }
 
@@ -440,9 +463,10 @@ public partial class MainWindow : Window
 
     private void ResetCounters_Click(object sender, RoutedEventArgs e) => _session?.ResetCounters();
 
-    private void About_Click(object sender, RoutedEventArgs e) => MessageBox.Show(this,
-        "Serial Assistant — serial port debug tool (ASCII/HEX, GBK, logging)\n\nToolbox · .NET 10 WPF · AvalonEdit editor",
-        "About", MessageBoxButton.OK, MessageBoxImage.Information);
+    private void About_Click(object sender, RoutedEventArgs e)
+    {
+        new AboutWindow { Owner = this }.ShowDialog();
+    }
 
     private void TxEditor_PreviewKeyDown(object sender, KeyEventArgs e)
     {
