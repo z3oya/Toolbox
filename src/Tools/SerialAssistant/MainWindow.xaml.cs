@@ -48,6 +48,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         FillChoices();
         LogEditor.TextArea.TextView.LineTransformers.Add(new DirectionColorizer(_segments));
+        AttachEditorMenu(LogEditor, editable: false);
+        AttachEditorMenu(TxEditor, editable: true);
         _uiTimer.Tick += (_, _) => DrainAndRender();
         RefreshPorts();
         Loaded += (_, _) =>
@@ -69,6 +71,29 @@ public partial class MainWindow : Window
     }
 
     private static T Selected<T>(ComboBox box) => ((Choice<T>)box.SelectedItem!).Value;
+
+    // AvalonEdit ships no context menu; give both editors the standard editing
+    // commands, targeted at their own text area so keyboard focus elsewhere
+    // can't route the commands to the wrong editor.
+    private static void AttachEditorMenu(ICSharpCode.AvalonEdit.TextEditor editor, bool editable)
+    {
+        var menu = new ContextMenu();
+        if (editable)
+            menu.Items.Add(MakeEditorMenuItem(ApplicationCommands.Cut, "Ctrl+X", editor));
+        menu.Items.Add(MakeEditorMenuItem(ApplicationCommands.Copy, "Ctrl+C", editor));
+        if (editable)
+            menu.Items.Add(MakeEditorMenuItem(ApplicationCommands.Paste, "Ctrl+V", editor));
+        menu.Items.Add(MakeEditorMenuItem(ApplicationCommands.SelectAll, "Ctrl+A", editor));
+        editor.ContextMenu = menu;
+    }
+
+    private static MenuItem MakeEditorMenuItem(RoutedCommand command, string gesture, ICSharpCode.AvalonEdit.TextEditor editor) =>
+        new()
+        {
+            Command = command,
+            CommandTarget = editor.TextArea,
+            InputGestureText = gesture,
+        };
 
     private void FillChoices()
     {
