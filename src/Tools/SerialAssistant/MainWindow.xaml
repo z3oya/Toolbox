@@ -20,10 +20,11 @@
                 <ComboBox x:Name="StopBitsBox" MinWidth="54" Margin="8,0,0,0"/>
                 <ComboBox x:Name="ParityBox" MinWidth="68" Margin="8,0,0,0"/>
                 <ComboBox x:Name="FlowBox" MinWidth="96" Margin="8,0,0,0"/>
-                <TextBlock Text="Encoding" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" Margin="16,0,6,0"/>
-                <ComboBox x:Name="EncodingBox" MinWidth="78"/>
-                <Button x:Name="ConnectButton" Content="▶ Connect" Style="{StaticResource PrimaryButton}"
-                        Margin="16,0,0,0" Click="Connect_Click"/>
+                <Button x:Name="ConnectButton" Content="Connect" Style="{StaticResource PrimaryButton}"
+                        Width="110" Margin="16,0,0,0" Click="Connect_Click"/>
+                <!-- Connection indicator: gray at rest, green while the port is open. -->
+                <Ellipse x:Name="ConnectedDot" Width="10" Height="10" Margin="8,0,0,0"
+                         VerticalAlignment="Center" Fill="{StaticResource SeparatorBrush}"/>
             </WrapPanel>
         </Border>
 
@@ -34,7 +35,7 @@
                    BorderBrush="{StaticResource SeparatorBrush}" BorderThickness="0,1,0,0"
                    Foreground="{StaticResource TextSecondaryBrush}">
             <StatusBarItem>
-                <Button x:Name="AboutButton" Content="About" Click="About_Click"/>
+                <Button x:Name="SettingsButton" Content="Settings" Click="Settings_Click"/>
             </StatusBarItem>
             <StatusBarItem Content="  |  "/>
             <StatusBarItem>

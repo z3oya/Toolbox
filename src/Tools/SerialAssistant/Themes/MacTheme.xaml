@@ -19,6 +19,7 @@
     <SolidColorBrush x:Key="PressedBrush" Color="#e5e5ea"/>
     <SolidColorBrush x:Key="WarningBrush" Color="#ff9f0a"/>
     <SolidColorBrush x:Key="ErrorBrush" Color="#ff3b30"/>
+    <SolidColorBrush x:Key="GreenBrush" Color="#34c759"/>
 
     <!-- Secondary button (implicit): white, rounded, subtle hover.
          Foreground must be set explicitly - the Aero2 theme style keeps

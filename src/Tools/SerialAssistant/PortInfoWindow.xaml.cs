@@ -43,8 +43,13 @@ public sealed partial class PortInfoWindow : Window
             DetailsList.ItemsSource = null;
     }
 
+    /// <summary>The port picked in the device list, or null; consumed by the owner when
+    /// the dialog closes with DialogResult true.</summary>
+    internal string? SelectedPort => (DevicesList.SelectedItem as PortInfoEntry)?.PortName;
+
     private void ShowDetails()
     {
+        SelectButton.IsEnabled = DevicesList.SelectedItem is not null;
         if (DevicesList.SelectedItem is not PortInfoEntry entry)
         {
             DetailsList.ItemsSource = null;
@@ -98,6 +103,12 @@ public sealed partial class PortInfoWindow : Window
     private static partial Regex ComPortName();
 
     private void DevicesList_SelectionChanged(object sender, SelectionChangedEventArgs e) => ShowDetails();
+
+    private void Select_Click(object sender, RoutedEventArgs e)
+    {
+        if (DevicesList.SelectedItem is PortInfoEntry)
+            DialogResult = true; // closes; the owner applies SelectedPort to its port combo
+    }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => LoadEntries(QueryDevices());
 }

@@ -48,11 +48,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         FillChoices();
         LogEditor.TextArea.TextView.LineTransformers.Add(new DirectionColorizer(_segments));
-        EncodingBox.SelectionChanged += (_, _) =>
-        {
-            _encodingKind = Selected<TextEncodingKind>(EncodingBox);
-            RebuildDecoder();
-        };
         _uiTimer.Tick += (_, _) => DrainAndRender();
         RefreshPorts();
         Loaded += (_, _) =>
@@ -123,16 +118,6 @@ public partial class MainWindow : Window
         };
         EolBox.ItemsSource = eols;
         EolBox.SelectedItem = eols[0];
-
-        var encodings = new[]
-        {
-            new Choice<TextEncodingKind>("UTF-8", TextEncodingKind.Utf8),
-            new Choice<TextEncodingKind>("ASCII", TextEncodingKind.Ascii),
-            new Choice<TextEncodingKind>("Latin1", TextEncodingKind.Latin1),
-            new Choice<TextEncodingKind>("GBK", TextEncodingKind.Gbk),
-        };
-        EncodingBox.ItemsSource = encodings;
-        EncodingBox.SelectedItem = encodings[0];
     }
 
     private void RefreshPorts()
@@ -191,7 +176,8 @@ public partial class MainWindow : Window
 
         _transport = transport;
         _session = session;
-        ConnectButton.Content = "■ Disconnect";
+        ConnectButton.Content = "Disconnect";
+        ConnectedDot.Fill = (Brush)FindResource("GreenBrush");
         StatusInfo.Text = ConnectionSummary(config);
         foreach (var box in new Control[] { PortBox, RefreshButton, BaudBox, DataBitsBox, StopBitsBox, ParityBox, FlowBox })
             box.IsEnabled = false;
@@ -209,7 +195,8 @@ public partial class MainWindow : Window
         _uiTimer.Stop();
         StatusCounters.Text = "RX 0 B  TX 0 B";
         StatusInfo.Text = "Not connected";
-        ConnectButton.Content = "▶ Connect";
+        ConnectButton.Content = "Connect";
+        ConnectedDot.Fill = (Brush)FindResource("SeparatorBrush");
         foreach (var box in new Control[] { PortBox, RefreshButton, BaudBox, DataBitsBox, StopBitsBox, ParityBox, FlowBox })
             box.IsEnabled = true;
     }
@@ -440,6 +427,12 @@ public partial class MainWindow : Window
     {
         var dlg = new PortInfoWindow(PortInfoWindow.QueryDevices()) { Owner = this };
         dlg.ShowDialog();
+        if (dlg.DialogResult == true && dlg.SelectedPort is string port)
+        {
+            RefreshPorts(); // repopulate from the live port list first, then honor the pick
+            if (PortBox.Items.Contains(port))
+                PortBox.SelectedItem = port;
+        }
     }
 
     private void Connect_Click(object sender, RoutedEventArgs e)
@@ -463,9 +456,25 @@ public partial class MainWindow : Window
 
     private void ResetCounters_Click(object sender, RoutedEventArgs e) => _session?.ResetCounters();
 
-    private void About_Click(object sender, RoutedEventArgs e)
+    private SettingsWindow? _settings;
+
+    // Non-modal so the encoding applies while watching the log; single instance.
+    private void Settings_Click(object sender, RoutedEventArgs e)
     {
-        new AboutWindow { Owner = this }.ShowDialog();
+        if (_settings is { IsLoaded: true })
+        {
+            _settings.Activate();
+            return;
+        }
+        _settings = new SettingsWindow(_encodingKind);
+        _settings.EncodingChanged = kind =>
+        {
+            _encodingKind = kind;
+            RebuildDecoder(); // text received after the switch decodes with the new encoding
+        };
+        _settings.Closed += (_, _) => _settings = null;
+        _settings.Owner = this;
+        _settings.Show();
     }
 
     private void TxEditor_PreviewKeyDown(object sender, KeyEventArgs e)
