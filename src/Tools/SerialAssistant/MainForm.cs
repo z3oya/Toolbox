@@ -33,29 +33,33 @@ public partial class MainForm : Form
         LexerName = "null", // no syntax lexing; we style ranges ourselves
     };
 
+    // Compose box: same editor, editable. Scintilla is plain-text only — pasted rich
+    // formatting (fonts/colors/HTML) is dropped, the clipboard's Unicode text is kept.
+    private readonly Scintilla _txEditor = new()
+    {
+        Dock = DockStyle.Fill,
+        WrapMode = WrapMode.None,
+        LexerName = "null",
+    };
+
     // Line index -> sent from us? Drives TX/RX styling; kept in lockstep with the document.
     private readonly List<bool> _lineIsTx = new();
 
     private readonly CheckBox _rxHex = new() { Text = "RX: HEX", AutoSize = true };
     private readonly CheckBox _txHex = new() { Text = "TX: HEX", AutoSize = true };
     private readonly CheckBox _autoScroll = new() { Text = "Auto-scroll", AutoSize = true, Checked = true };
-    private readonly Label _counters = new() { Text = "RX 0 B  TX 0 B", AutoSize = true, Padding = new Padding(0, 6, 0, 0) };
     private readonly Button _reset = new() { Text = "Reset", AutoSize = true };
     private readonly Button _clear = new() { Text = "Clear", AutoSize = true };
+
+    // True bottom status bar: About button on the left, byte counters right-aligned by the sizing grip.
+    private readonly StatusStrip _statusBar = new();
+    private readonly ToolStripButton _statusAbout = new() { Text = "About", DisplayStyle = ToolStripItemDisplayStyle.Text };
+    private readonly ToolStripStatusLabel _statusCounters = new() { Text = "RX 0 B  TX 0 B", Spring = true, TextAlign = ContentAlignment.MiddleRight };
 
     private readonly ComboBox _eol = new() { Width = 70, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly ComboBox _encoding = new() { Width = 80, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Button _saveLog = new() { Text = "Save log…", AutoSize = true };
 
-    private readonly TextBox _txBox = new()
-    {
-        Dock = DockStyle.Fill,
-        Multiline = true,
-        ScrollBars = ScrollBars.Vertical,
-        Font = new Font("Consolas", 9f),
-        WordWrap = false,
-        AcceptsReturn = true,
-    };
     private readonly Button _send = new() { Text = "Send", AutoSize = true };
     private readonly Button _loadFile = new() { Text = "Load file…", AutoSize = true };
 
@@ -87,16 +91,10 @@ public partial class MainForm : Form
         _encoding.Items.AddRange(new object[] { "UTF-8", "ASCII", "Latin1", "GBK" });
         _encoding.SelectedIndex = 0;
 
-        _editor.Styles[Style.Default].Font = "Consolas";
-        _editor.Styles[Style.Default].Size = 10;
-        _editor.Styles[Style.Default].ForeColor = Color.Black;
-        _editor.Styles[Style.Default].BackColor = Color.White;
-        _editor.StyleClearAll(); // propagate the default to every style before overriding
+        ConfigureEditor(_editor);
         _editor.Styles[StyleRx].ForeColor = Color.MidnightBlue;
         _editor.Styles[StyleTx].ForeColor = Color.Firebrick;
-        _editor.Margins[0].Type = MarginType.Number; // line numbers
-        _editor.Margins[0].Width = 44;
-        _editor.Margins[1].Width = 0; // hide the default symbol/folding margin
+        ConfigureEditor(_txEditor);
 
         // Right column: connection settings stacked top-down.
         var right = new Panel { Dock = DockStyle.Right, Width = 170, Padding = new Padding(8) };
@@ -123,7 +121,7 @@ public partial class MainForm : Form
         });
 
         var options = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, Padding = new Padding(8, 4, 8, 0), WrapContents = false };
-        options.Controls.AddRange(new Control[] { _rxHex, _txHex, _autoScroll, _counters, _reset, _clear });
+        options.Controls.AddRange(new Control[] { _rxHex, _txHex, _autoScroll, _reset, _clear });
 
         var sendButtons = new Panel { Dock = DockStyle.Right, Width = 100, Padding = new Padding(4) };
         _send.Dock = DockStyle.Top;
@@ -132,24 +130,31 @@ public partial class MainForm : Form
         sendButtons.Controls.Add(_loadFile);
 
         var sendPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(4) };
-        sendPanel.Controls.Add(_txBox);
+        sendPanel.Controls.Add(_txEditor);
         sendPanel.Controls.Add(sendButtons);
 
         var bottom = new Panel { Dock = DockStyle.Bottom, Height = 150 };
         bottom.Controls.Add(sendPanel);
         bottom.Controls.Add(options);
 
-        // Dock precedence runs in reverse add order: right column spans full height,
-        // the strip sits at the very bottom, the send block above it, the log fills the rest.
+        // Dock precedence runs in reverse add order: the status bar docks first (full-width,
+        // under everything), then the right column spans the remaining height, the strip sits
+        // at the bottom of the left region, the send block above it, the log fills the rest.
+        _statusAbout.Click += (_, _) => MessageBox.Show(
+            "Serial Assistant — serial port debug tool (ASCII/HEX, GBK, logging)\n\nToolbox · .NET 10 WinForms · Scintilla editor",
+            "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        _statusBar.Items.Add(_statusAbout);
+        _statusBar.Items.Add(_statusCounters);
         Controls.Add(_editor);
         Controls.Add(bottom);
         Controls.Add(strip);
         Controls.Add(right);
+        Controls.Add(_statusBar);
 
         _refresh.Click += (_, _) => RefreshPorts();
         _connect.Click += (_, _) => { if (_session is null) Connect(); else ClosePort(); };
         _send.Click += (_, _) => Send();
-        _txBox.KeyDown += (_, e) =>
+        _txEditor.KeyDown += (_, e) =>
         {
             if (e.Control && e.KeyCode == Keys.Enter) { Send(); e.Handled = e.SuppressKeyPress = true; }
         };
@@ -183,6 +188,20 @@ public partial class MainForm : Form
         3 => "\r",
         _ => "",
     };
+
+    /// <summary>Shared plain-text look: mono font, line-number margin, no lexer, no wrap.
+    /// Scintilla holds plain text only, so pasted rich formatting is silently discarded.</summary>
+    private static void ConfigureEditor(Scintilla editor)
+    {
+        editor.Styles[Style.Default].Font = "Consolas";
+        editor.Styles[Style.Default].Size = 10;
+        editor.Styles[Style.Default].ForeColor = Color.Black;
+        editor.Styles[Style.Default].BackColor = Color.White;
+        editor.StyleClearAll(); // propagate the default to every style before any overrides
+        editor.Margins[0].Type = MarginType.Number;
+        editor.Margins[0].Width = 44;
+        editor.Margins[1].Width = 0; // hide the default symbol/folding margin
+    }
 
     private void RefreshPorts()
     {
@@ -250,7 +269,7 @@ public partial class MainForm : Form
         _session = null;
         _transport = null;
         _uiTimer.Stop();
-        _counters.Text = "RX 0 B  TX 0 B";
+        _statusCounters.Text = "RX 0 B  TX 0 B";
         _connect.Text = "▶ Connect";
         foreach (var box in new Control[] { _port, _refresh, _baud, _dataBits, _stopBits, _parity, _flow })
             box.Enabled = true;
@@ -268,7 +287,7 @@ public partial class MainForm : Form
         {
             if (_txHex.Checked)
             {
-                if (!HexCodec.TryParse(_txBox.Text, out var bytes, out var error))
+                if (!HexCodec.TryParse(_txEditor.Text, out var bytes, out var error))
                 {
                     MessageBox.Show($"Invalid hex input: {error}", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
@@ -277,7 +296,7 @@ public partial class MainForm : Form
             }
             else
             {
-                var text = _txBox.Text + EolSuffix(_eol.SelectedIndex);
+                var text = _txEditor.Text + EolSuffix(_eol.SelectedIndex);
                 session.SendText(text, _encodingKind);
             }
         }
@@ -314,14 +333,14 @@ public partial class MainForm : Form
                 _editor.GotoPosition(_editor.TextLength);
             TrimLog();
         }
-        _counters.Text = $"RX {session.RxBytes:N0} B  TX {session.TxBytes:N0} B";
+        _statusCounters.Text = $"RX {session.RxBytes:N0} B  TX {session.TxBytes:N0} B";
     }
 
     private void AppendChunk(SerialChunk chunk)
     {
         bool tx = chunk.Direction == SerialDirection.Tx;
         string text = (tx ? _txHex.Checked : _rxHex.Checked) ? HexCodec.Format(chunk.Data) : Decode(chunk, tx);
-        string line = (tx ? "TX " : "RX ") + text + "\n";
+        string line = text + "\n"; // direction is conveyed by color only, no text marker
         int start = _editor.TextLength;
         _editor.ReadOnly = false; // programmatic edits against a read-only view
         _editor.AppendText(line);
@@ -382,7 +401,7 @@ public partial class MainForm : Form
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
         try
         {
-            _txBox.Text = _txHex.Checked
+            _txEditor.Text = _txHex.Checked
                 ? HexCodec.Format(LogStore.ReadBytes(dlg.FileName))
                 : LogStore.ReadText(dlg.FileName);
         }
