@@ -39,6 +39,22 @@ public class LogStoreTests
     }
 
     [Fact]
+    public void WriteText_replaces_previous_content()
+    {
+        var path = TempFile();
+        try
+        {
+            LogStore.AppendText(path, "old log\n");
+            LogStore.WriteText(path, "new log\n");
+            Assert.Equal("new log\n", LogStore.ReadText(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void ReadBytes_returns_appended_payload()
     {
         var path = TempFile();

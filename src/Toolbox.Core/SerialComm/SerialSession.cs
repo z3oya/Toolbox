@@ -124,9 +124,14 @@ public sealed class SerialSession : IDisposable
     }
 
     // Background thread: the transport has closed itself; mark closed so Send/Open fail fast.
+    // Errors racing a deliberate Close() are dropped: the user already knows the port is gone.
     private void OnTransportError(Exception ex)
     {
-        lock (_lock) _open = false;
+        lock (_lock)
+        {
+            if (!_open) return;
+            _open = false;
+        }
         TransportError?.Invoke(this, ex);
     }
 }

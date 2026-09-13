@@ -203,6 +203,7 @@ public class SerialSessionTests
     {
         var transport = new FakeTransport();
         using var session = new SerialSession(transport);
+        session.Open(new SerialPortConfig { PortName = "COM3" });
         Exception? seen = null;
         session.TransportError += (_, ex) => seen = ex;
 
@@ -210,5 +211,21 @@ public class SerialSessionTests
         transport.RaiseError(boom);
 
         Assert.Same(boom, seen);
+        Assert.False(session.IsOpen);
+    }
+
+    [Fact]
+    public void Transport_error_while_closed_is_suppressed()
+    {
+        var transport = new FakeTransport();
+        using var session = new SerialSession(transport);
+        session.Open(new SerialPortConfig { PortName = "COM3" });
+        session.Close(); // deliberate close: a racing in-flight error must not look like a failure
+        Exception? seen = null;
+        session.TransportError += (_, ex) => seen = ex;
+
+        transport.RaiseError(new IOException("late error after close"));
+
+        Assert.Null(seen);
     }
 }
