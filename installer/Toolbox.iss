@@ -71,6 +71,12 @@ Source: "publish\App\Toolbox.Ui.WinForms.dll"; DestDir: "{app}"; Components: exa
 Source: "publish\App\Toolbox.Ui.WPF.dll"; DestDir: "{app}"; Components: examplewpf; Flags: ignoreversion
 Source: "publish\App\Svg.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion
 Source: "publish\App\System.IO.Ports.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
+Source: "publish\App\Scintilla.NET.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
+; Scintilla native core (editor + lexilla) per architecture; the managed control probes x64\ and x86\ next to the exe
+Source: "publish\App\x64\Scintilla.dll"; DestDir: "{app}\x64"; Components: serialassistant; Flags: ignoreversion
+Source: "publish\App\x64\Lexilla.dll"; DestDir: "{app}\x64"; Components: serialassistant; Flags: ignoreversion
+Source: "publish\App\x86\Scintilla.dll"; DestDir: "{app}\x86"; Components: serialassistant; Flags: ignoreversion
+Source: "publish\App\x86\Lexilla.dll"; DestDir: "{app}\x86"; Components: serialassistant; Flags: ignoreversion
 ; deps.json prefers the rid=win asset over the root dll; the unix/mac native libs are dead weight on Windows and stay out
 Source: "publish\App\runtimes\win\*"; DestDir: "{app}\runtimes\win"; Components: serialassistant; Flags: ignoreversion recursesubdirs
 Source: "publish\App\ExCSS.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion

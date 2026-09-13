@@ -10,7 +10,7 @@ A basic C# solution structure.
 - ``src/Tools/Example`` - standalone WinForms tool (exe)
 - ``src/Tools/ExampleWPF`` - standalone WPF tool (exe)
 - ``src/Tools/FunctionGenerator`` - standalone WinForms function generator (UDP PCM output)
-- ``src/Tools/SerialAssistant`` - standalone WinForms serial port debug assistant (ASCII/HEX, timestamps, counters, logging)
+- ``src/Tools/SerialAssistant`` - standalone WinForms serial port debug assistant (ASCII/HEX, line numbers, counters, logging)
 - ``tests/Toolbox.Tests`` - xUnit test project
 
 Tools are standalone executables under ``src/Tools/<ToolName>`` and share logic via ``Toolbox.Core``.

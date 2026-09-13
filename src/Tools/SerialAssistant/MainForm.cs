@@ -1,46 +1,50 @@
+using System.ComponentModel;
+using System.IO;
 using System.IO.Ports;
 using System.Text;
+using ScintillaNET;
 using Toolbox.Core.SerialComm;
 
 namespace Toolbox.Tools.SerialAssistant;
 
 public partial class MainForm : Form
 {
-    private const int MaxLogChars = 1_000_000; // trim head beyond this; ~1 MB of rendered log is plenty to scroll back through
+    private const int MaxLogChars = 1_000_000; // trim head beyond this; the editor virtualizes so this only bounds memory
     private const int KeptLogChars = 500_000;
+    private const int StyleRx = 1; // custom styles on top of Style.Default
+    private const int StyleTx = 2;
 
-    private static readonly Color RxColor = Color.MidnightBlue;
-    private static readonly Color TxColor = Color.Firebrick;
-    private static readonly Font MonoFont = new("Consolas", 9f);
-
-    private readonly ComboBox _port = new() { Width = 100, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _port = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Button _refresh = new() { Text = "Refresh", AutoSize = true };
-    private readonly ComboBox _baud = new() { Width = 80, DropDownStyle = ComboBoxStyle.DropDown }; // editable: exotic rates allowed
-    private readonly ComboBox _dataBits = new() { Width = 40, DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _stopBits = new() { Width = 50, DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _parity = new() { Width = 65, DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _flow = new() { Width = 95, DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly Button _connect = new() { Text = "▶ Connect", AutoSize = true };
+    private readonly ComboBox _baud = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDown }; // editable: exotic rates allowed
+    private readonly ComboBox _dataBits = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _stopBits = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _parity = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _flow = new() { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly Button _connect = new() { Text = "▶ Connect", AutoSize = true, Margin = new Padding(0, 12, 3, 0) };
 
-    private readonly RichTextBox _rxBox = new()
+    // Scintilla (Notepad++'s editor core): native WinForms control with a number margin,
+    // virtualized rendering and per-range styling — no WPF interop in this tool.
+    private readonly Scintilla _editor = new()
     {
         Dock = DockStyle.Fill,
         ReadOnly = true,
-        BackColor = SystemColors.Window, // ReadOnly alone would gray the box
-        Font = MonoFont,
-        WordWrap = false,
-        DetectUrls = false,
+        WrapMode = WrapMode.None,
+        LexerName = "null", // no syntax lexing; we style ranges ourselves
     };
+
+    // Line index -> sent from us? Drives TX/RX styling; kept in lockstep with the document.
+    private readonly List<bool> _lineIsTx = new();
 
     private readonly CheckBox _rxHex = new() { Text = "RX: HEX", AutoSize = true };
     private readonly CheckBox _txHex = new() { Text = "TX: HEX", AutoSize = true };
-    private readonly CheckBox _timestamp = new() { Text = "Timestamp", AutoSize = true, Checked = true };
     private readonly CheckBox _autoScroll = new() { Text = "Auto-scroll", AutoSize = true, Checked = true };
-    private readonly CheckBox _crlf = new() { Text = "+CRLF", AutoSize = true };
-    private readonly ComboBox _encoding = new() { Width = 80, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Label _counters = new() { Text = "RX 0 B  TX 0 B", AutoSize = true, Padding = new Padding(0, 6, 0, 0) };
     private readonly Button _reset = new() { Text = "Reset", AutoSize = true };
     private readonly Button _clear = new() { Text = "Clear", AutoSize = true };
+
+    private readonly ComboBox _eol = new() { Width = 70, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _encoding = new() { Width = 80, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Button _saveLog = new() { Text = "Save log…", AutoSize = true };
 
     private readonly TextBox _txBox = new()
@@ -48,7 +52,7 @@ public partial class MainForm : Form
         Dock = DockStyle.Fill,
         Multiline = true,
         ScrollBars = ScrollBars.Vertical,
-        Font = MonoFont,
+        Font = new Font("Consolas", 9f),
         WordWrap = false,
         AcceptsReturn = true,
     };
@@ -78,19 +82,48 @@ public partial class MainForm : Form
         _parity.SelectedIndex = 0;
         _flow.Items.AddRange(new object[] { "None", "RTS-CTS", "XON-XOFF" });
         _flow.SelectedIndex = 0;
+        _eol.Items.AddRange(new object[] { "None", "CRLF", "LF", "CR" }); // index drives EolSuffix
+        _eol.SelectedIndex = 0;
         _encoding.Items.AddRange(new object[] { "UTF-8", "ASCII", "Latin1", "GBK" });
         _encoding.SelectedIndex = 0;
 
-        var top = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 36, Padding = new Padding(8, 6, 8, 0), WrapContents = false };
-        top.Controls.AddRange(new Control[]
+        _editor.Styles[Style.Default].Font = "Consolas";
+        _editor.Styles[Style.Default].Size = 10;
+        _editor.Styles[Style.Default].ForeColor = Color.Black;
+        _editor.Styles[Style.Default].BackColor = Color.White;
+        _editor.StyleClearAll(); // propagate the default to every style before overriding
+        _editor.Styles[StyleRx].ForeColor = Color.MidnightBlue;
+        _editor.Styles[StyleTx].ForeColor = Color.Firebrick;
+        _editor.Margins[0].Type = MarginType.Number; // line numbers
+        _editor.Margins[0].Width = 44;
+        _editor.Margins[1].Width = 0; // hide the default symbol/folding margin
+
+        // Right column: connection settings stacked top-down.
+        var right = new Panel { Dock = DockStyle.Right, Width = 170, Padding = new Padding(8) };
+        var settings = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false };
+        settings.Controls.AddRange(new Control[]
         {
-            new Label { Text = "Port", AutoSize = true, Padding = new Padding(0, 6, 0, 0) }, _port, _refresh,
-            new Label { Text = "Baud", AutoSize = true, Padding = new Padding(8, 6, 0, 0) }, _baud,
-            _dataBits, _stopBits, _parity, _flow, _connect,
+            FieldLabel("Port"), _port, _refresh,
+            FieldLabel("Baud"), _baud,
+            FieldLabel("Data bits"), _dataBits,
+            FieldLabel("Stop bits"), _stopBits,
+            FieldLabel("Parity"), _parity,
+            FieldLabel("Flow control"), _flow,
+            _connect,
+        });
+        right.Controls.Add(settings);
+
+        // Bottom-most strip: line ending, encoding, log saving.
+        var strip = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 34, Padding = new Padding(8, 6, 8, 0), WrapContents = false };
+        strip.Controls.AddRange(new Control[]
+        {
+            new Label { Text = "Line ending", AutoSize = true, Padding = new Padding(0, 6, 0, 0) }, _eol,
+            new Label { Text = "Encoding", AutoSize = true, Padding = new Padding(12, 6, 0, 0) }, _encoding,
+            new Label { Text = "", AutoSize = true, Width = 12 }, _saveLog,
         });
 
         var options = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, Padding = new Padding(8, 4, 8, 0), WrapContents = false };
-        options.Controls.AddRange(new Control[] { _rxHex, _txHex, _timestamp, _autoScroll, _crlf, _encoding, _counters, _reset, _clear, _saveLog });
+        options.Controls.AddRange(new Control[] { _rxHex, _txHex, _autoScroll, _counters, _reset, _clear });
 
         var sendButtons = new Panel { Dock = DockStyle.Right, Width = 100, Padding = new Padding(4) };
         _send.Dock = DockStyle.Top;
@@ -106,9 +139,12 @@ public partial class MainForm : Form
         bottom.Controls.Add(sendPanel);
         bottom.Controls.Add(options);
 
-        Controls.Add(_rxBox);
+        // Dock precedence runs in reverse add order: right column spans full height,
+        // the strip sits at the very bottom, the send block above it, the log fills the rest.
+        Controls.Add(_editor);
         Controls.Add(bottom);
-        Controls.Add(top);
+        Controls.Add(strip);
+        Controls.Add(right);
 
         _refresh.Click += (_, _) => RefreshPorts();
         _connect.Click += (_, _) => { if (_session is null) Connect(); else ClosePort(); };
@@ -120,7 +156,10 @@ public partial class MainForm : Form
         _reset.Click += (_, _) => _session?.ResetCounters();
         _clear.Click += (_, _) =>
         {
-            _rxBox.Clear();
+            _editor.ReadOnly = false;
+            _editor.Text = "";
+            _editor.ReadOnly = true;
+            _lineIsTx.Clear();
             RebuildDecoder(); // text decoded after a clear starts from a clean character boundary
         };
         _saveLog.Click += (_, _) => SaveLog();
@@ -133,7 +172,17 @@ public partial class MainForm : Form
         _uiTimer.Tick += (_, _) => DrainAndRender();
 
         RefreshPorts();
+
+        static Label FieldLabel(string text) => new() { Text = text, AutoSize = true, Margin = new Padding(0, 10, 3, 0) };
     }
+
+    private static string EolSuffix(int eolIndex) => eolIndex switch
+    {
+        1 => "\r\n",
+        2 => "\n",
+        3 => "\r",
+        _ => "",
+    };
 
     private void RefreshPorts()
     {
@@ -228,8 +277,7 @@ public partial class MainForm : Form
             }
             else
             {
-                var text = _txBox.Text;
-                if (_crlf.Checked) text += "\r\n";
+                var text = _txBox.Text + EolSuffix(_eol.SelectedIndex);
                 session.SendText(text, _encodingKind);
             }
         }
@@ -263,10 +311,7 @@ public partial class MainForm : Form
             foreach (var chunk in chunks)
                 AppendChunk(chunk);
             if (_autoScroll.Checked)
-            {
-                _rxBox.SelectionStart = _rxBox.TextLength;
-                _rxBox.ScrollToCaret();
-            }
+                _editor.GotoPosition(_editor.TextLength);
             TrimLog();
         }
         _counters.Text = $"RX {session.RxBytes:N0} B  TX {session.TxBytes:N0} B";
@@ -275,16 +320,15 @@ public partial class MainForm : Form
     private void AppendChunk(SerialChunk chunk)
     {
         bool tx = chunk.Direction == SerialDirection.Tx;
-        bool hex = tx ? _txHex.Checked : _rxHex.Checked;
-        string text = hex ? HexCodec.Format(chunk.Data) : Decode(chunk, tx);
-        string line = (_timestamp.Checked ? $"[{chunk.Timestamp.LocalDateTime:HH:mm:ss.fff}] " : "")
-            + (tx ? "TX " : "RX ") + text + "\n";
-
-        _rxBox.SelectionStart = _rxBox.TextLength;
-        _rxBox.SelectionLength = 0;
-        _rxBox.SelectionColor = tx ? TxColor : RxColor;
-        _rxBox.AppendText(line);
-        _rxBox.SelectionColor = _rxBox.ForeColor; // reset so user selections keep the default color
+        string text = (tx ? _txHex.Checked : _rxHex.Checked) ? HexCodec.Format(chunk.Data) : Decode(chunk, tx);
+        string line = (tx ? "TX " : "RX ") + text + "\n";
+        int start = _editor.TextLength;
+        _editor.ReadOnly = false; // programmatic edits against a read-only view
+        _editor.AppendText(line);
+        _editor.ReadOnly = true;
+        _editor.StartStyling(start);
+        _editor.SetStyling(line.Length, tx ? StyleTx : StyleRx);
+        _lineIsTx.Add(tx);
     }
 
     // RX text keeps a stateful decoder across batches (a UTF-8 char may span two receive events);
@@ -300,12 +344,16 @@ public partial class MainForm : Form
 
     private void TrimLog()
     {
-        if (_rxBox.TextLength <= MaxLogChars) return;
-        _rxBox.ReadOnly = false; // ReadOnly blocks clearing SelectedText
-        _rxBox.Select(0, _rxBox.TextLength - KeptLogChars);
-        _rxBox.SelectedText = "";
-        _rxBox.SelectionStart = _rxBox.TextLength;
-        _rxBox.ReadOnly = true;
+        if (_editor.TextLength <= MaxLogChars) return;
+        // Cut to the next line start so line numbers and the direction list stay in sync.
+        int cut = _editor.TextLength - KeptLogChars;
+        while (cut < _editor.TextLength && _editor.GetCharAt(cut) != '\n') cut++;
+        if (cut < _editor.TextLength) cut++; // past the newline
+        int removedLines = _editor.LineFromPosition(cut);
+        _editor.ReadOnly = false;
+        _editor.DeleteRange(0, cut);
+        _editor.ReadOnly = true;
+        _lineIsTx.RemoveRange(0, removedLines);
     }
 
     private void RebuildDecoder() => _rxDecoder = TextCodec.Resolve(_encodingKind).GetDecoder();
@@ -320,7 +368,7 @@ public partial class MainForm : Form
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
         try
         {
-            LogStore.WriteText(dlg.FileName, _rxBox.Text); // what you see is what is saved, colors aside
+            LogStore.WriteText(dlg.FileName, _editor.Text); // what you see is what is saved, colors aside
         }
         catch (Exception ex)
         {
