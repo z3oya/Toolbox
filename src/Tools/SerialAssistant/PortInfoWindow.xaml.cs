@@ -119,10 +119,9 @@ public sealed partial class PortInfoWindow : Window
         {
             if (raw is not ManagementObject entity) continue;
             string caption = entity["Caption"]?.ToString() ?? "";
-            var match = ComPortName().Match(caption);
-            if (!match.Success) continue;
+            if (!SerialPortNames.TryGetComName(caption, out var comName)) continue;
             list.Add(new PortInfoEntry(
-                match.Groups[1].Value,
+                comName,
                 caption,
                 entity["Description"]?.ToString() ?? "",
                 entity["Manufacturer"]?.ToString() ?? "",
@@ -132,9 +131,6 @@ public sealed partial class PortInfoWindow : Window
         }
         return list;
     }
-
-    [GeneratedRegex(@"\((COM\d+)\)", RegexOptions.IgnoreCase)]
-    private static partial Regex ComPortName();
 
     private void DevicesList_SelectionChanged(object sender, SelectionChangedEventArgs e) => ShowDetails();
 

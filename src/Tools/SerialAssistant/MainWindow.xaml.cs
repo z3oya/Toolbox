@@ -1,5 +1,7 @@
 using System.IO;
 using System.IO.Ports;
+using System.Management;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,6 +38,7 @@ public partial class MainWindow : Window
 
     private SystemSerialTransport? _transport;
     private SerialSession? _session;
+    private DeviceRemovalWatcher? _watcher; // armed while a port is open: proactive unplug detection
     private TextEncodingKind _encodingKind = TextEncodingKind.Utf8;
     private Decoder _rxDecoder = TextCodec.Resolve(TextEncodingKind.Utf8).GetDecoder(); // stateful: keeps a UTF-8 char split across receive batches intact
 
@@ -207,6 +210,21 @@ public partial class MainWindow : Window
         foreach (var box in new Control[] { PortBox, PortInfoButton, RefreshButton, BaudBox, DataBitsBox, StopBitsBox, ParityBox, FlowBox })
             box.IsEnabled = false;
         _uiTimer.Start();
+
+        var watcher = new DeviceRemovalWatcher(config.PortName);
+        watcher.DeviceRemoved += OnDeviceRemoved;
+        _watcher = watcher;
+        try
+        {
+            watcher.Start();
+        }
+        catch (Exception ex) when (ex is ManagementException or COMException)
+        {
+            // WMI can fail outright (service disabled, RPC down): degrade silently to
+            // reactive-only detection; the transport error path still covers unplug.
+            _watcher = null;
+            watcher.Dispose();
+        }
     }
 
     private void ClosePort()
@@ -217,6 +235,9 @@ public partial class MainWindow : Window
         _transport?.Dispose();
         _session = null;
         _transport = null;
+        _watcher?.DeviceRemoved -= OnDeviceRemoved; // same teardown discipline as the session above
+        _watcher?.Dispose();
+        _watcher = null;
         _uiTimer.Stop();
         StatusCounters.Text = "RX 0 B  TX 0 B";
         StatusInfo.Text = "Not connected";
@@ -294,7 +315,7 @@ public partial class MainWindow : Window
         {
             // Dead port or unplug race — unless the user already swapped connections
             // (disconnect + reconnect while this write was in flight): leave the new one alone.
-            if (ReferenceEquals(session, _session)) HandlePortFailure(ex);
+            if (ReferenceEquals(session, _session)) HandlePortFailure($"Port error: {ex.Message}");
         }
         finally
         {
@@ -309,15 +330,34 @@ public partial class MainWindow : Window
     {
         Dispatcher.BeginInvoke(() =>
         {
-            if (ReferenceEquals(sender, _session)) HandlePortFailure(ex);
+            if (ReferenceEquals(sender, _session)) HandlePortFailure($"Port error: {ex.Message}");
         });
     }
 
-    private void HandlePortFailure(Exception ex)
+    private void OnDeviceRemoved(string portName)
+    {
+        var watcher = _watcher;
+        var session = _session;
+        if (watcher is null || session is null) return;
+        // Deletion events can lag the connection by up to the WMI poll interval;
+        // drop one that belongs to a connection the user already replaced.
+        // BeginInvoke, never Invoke: watcher.Stop() waits for in-flight callbacks,
+        // so a synchronous callback here would deadlock the teardown on the UI thread.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!ReferenceEquals(_watcher, watcher) || !ReferenceEquals(_session, session)) return;
+            HandlePortFailure($"Device removed ({portName})");
+        });
+    }
+
+    private void HandlePortFailure(string message)
     {
         if (_session is null) return; // already torn down (user disconnect or window closed)
-        ShowMessage($"Port error: {ex.Message}", MessageBoxImage.Error);
+        // Tear down before showing the box: an unplug can fire both the reactive
+        // transport error and the removal event - ClosePort's null guard makes the
+        // second caller a no-op instead of a second dialog.
         ClosePort();
+        ShowMessage(message, MessageBoxImage.Error);
     }
 
     private void DrainAndRender()
