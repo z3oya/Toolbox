@@ -15,7 +15,9 @@ public interface IRttTransport : IDisposable
     /// <summary>Idempotent; after an Error event the transport has already closed itself.</summary>
     void Close();
 
-    /// <summary>Throws on failure; a short write (target down-buffer full) warns but does not throw.</summary>
+    /// <summary>Throws on failure. A full down-buffer (target not reading, or the DLL's view
+    /// not yet settled right after start) is retried for a short deadline, then throws rather
+    /// than dropping the payload silently.</summary>
     void Write(ReadOnlySpan<byte> data);
 
     /// <summary>Raised on a background thread when target bytes arrive.</summary>
