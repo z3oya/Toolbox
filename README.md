@@ -10,6 +10,7 @@ A basic C# solution structure.
 - ``src/Tools/Example`` - standalone WinForms tool (exe)
 - ``src/Tools/ExampleWPF`` - standalone WPF tool (exe)
 - ``src/Tools/FunctionGenerator`` - standalone WinForms function generator (UDP PCM output)
+- ``src/Tools/rtt-cli`` - standalone console tool for SEGGER J-Link RTT (interactive terminal, device database listing, one-shot send)
 - ``src/Tools/SerialAssistant`` - standalone WPF serial port debug assistant (ASCII/HEX, line numbers, counters, logging)
 - ``tests/Toolbox.Tests`` - xUnit test project
 
@@ -31,7 +32,22 @@ Tools are standalone executables under ``src/Tools/<ToolName>`` and share logic 
 
 ````dotnet run --project src/Tools/FunctionGenerator````
 
+````dotnet run --project src/Tools/rtt-cli -- --help````
+
 ````dotnet run --project src/Tools/SerialAssistant````
+
+## rtt-cli (J-Link RTT terminal)
+
+Requires a SEGGER J-Link software installation (the DLL is auto-detected under the SEGGER
+install roots; pass ``--dll <path>`` otherwise) and a J-Link probe. Core flows:
+
+````rtt-cli list-devices --filter stm32h743````
+
+````rtt-cli --chip STM32H743XI````
+
+````rtt-cli --chip STM32H743XI --hex --log capture.bin````
+
+Data goes to stdout (pipeable), diagnostics to stderr; ``--eol``/``--encoding``/``--rtt-addr``/``--rtt-range``/``--sn`` refine the link, see ``--help``.
 
 ## Package (installer with optional components)
 

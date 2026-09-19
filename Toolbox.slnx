@@ -11,6 +11,7 @@
     <Project Path="src/Tools/Example/Example.csproj" />
     <Project Path="src/Tools/ExampleWPF/ExampleWPF.csproj" />
     <Project Path="src/Tools/FunctionGenerator/FunctionGenerator.csproj" />
+    <Project Path="src/Tools/rtt-cli/rtt-cli.csproj" />
     <Project Path="src/Tools/SerialAssistant/SerialAssistant.csproj" />
   </Folder>
 </Solution>

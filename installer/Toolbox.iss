@@ -39,6 +39,7 @@ Name: "custom"; Description: "Custom selection"; Flags: iscustom
 Name: "example"; Description: "Example tool (WinForms)"; Types: full compact custom
 Name: "examplewpf"; Description: "ExampleWPF tool (WPF)"; Types: full custom
 Name: "funcgen"; Description: "Function Generator (UDP signal generator)"; Types: full custom
+Name: "rttcli"; Description: "RTT-CLI (J-Link RTT terminal)"; Types: full custom
 Name: "serialassistant"; Description: "Serial Assistant (COM port debug tool)"; Types: full custom
 
 ; ---- Additional optional tasks ----
@@ -62,11 +63,15 @@ Source: "publish\App\FunctionGenerator.exe"; DestDir: "{app}"; Components: funcg
 Source: "publish\App\FunctionGenerator.dll"; DestDir: "{app}"; Components: funcgen; Flags: ignoreversion
 Source: "publish\App\FunctionGenerator.deps.json"; DestDir: "{app}"; Components: funcgen; Flags: ignoreversion
 Source: "publish\App\FunctionGenerator.runtimeconfig.json"; DestDir: "{app}"; Components: funcgen; Flags: ignoreversion
+Source: "publish\App\rtt-cli.exe"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
+Source: "publish\App\rtt-cli.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
+Source: "publish\App\rtt-cli.deps.json"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
+Source: "publish\App\rtt-cli.runtimeconfig.json"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.exe"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.deps.json"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.runtimeconfig.json"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
-Source: "publish\App\Toolbox.Core.dll"; DestDir: "{app}"; Components: example examplewpf funcgen serialassistant; Flags: ignoreversion
+Source: "publish\App\Toolbox.Core.dll"; DestDir: "{app}"; Components: example examplewpf funcgen rttcli serialassistant; Flags: ignoreversion
 Source: "publish\App\Toolbox.Ui.WinForms.dll"; DestDir: "{app}"; Components: example funcgen; Flags: ignoreversion
 Source: "publish\App\Toolbox.Ui.WPF.dll"; DestDir: "{app}"; Components: examplewpf; Flags: ignoreversion
 Source: "publish\App\Svg.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion

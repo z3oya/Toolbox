@@ -28,6 +28,7 @@ $projects = @(
     (Join-Path $repoRoot "src\Tools\Example"),
     (Join-Path $repoRoot "src\Tools\ExampleWPF"),
     (Join-Path $repoRoot "src\Tools\FunctionGenerator"),
+    (Join-Path $repoRoot "src\Tools\rtt-cli"),
     (Join-Path $repoRoot "src\Tools\SerialAssistant")
 )
 
