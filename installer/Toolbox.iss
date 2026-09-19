@@ -2,7 +2,7 @@
 ; Build via installer\build-installer.ps1 (dotnet publish + ISCC)
 
 #define MyAppName "Toolbox"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Toolbox"
 
 ; Flavor is passed in by build-installer.ps1 (/DFlavor=...); default for manual compiles.
