@@ -55,6 +55,15 @@ Data goes to stdout (pipeable), diagnostics to stderr; ``--eol``/``--encoding``/
 rtt-cli script smoke.lua --chip STM32H743XI
 ```
 
+Inline one-liners skip the file entirely:
+
+```
+rtt-cli script --eval 'rtt.send("led r on"); rtt.expect("LED r on", 500)' --chip STM32H743XI
+```
+
+`--eval` is mutually exclusive with the file path; everything else (rtt.* API,
+options, exit codes) is identical. Errors report as ``eval:<line>:``.
+
 `rtt` API: `send(text)` (appends `--eol`), `send_hex("DE AD")` (lossless binary TX), `log(line)`
 (stderr), `wait(ms)` -> new bytes as text (ASCII-reliable) or `""` (passive tap),
 `wait_hex(ms)` -> same window as hex text (byte-exact binary RX), `expect(pattern, ms=1000)` ->
