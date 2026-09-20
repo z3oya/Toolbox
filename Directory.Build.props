@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- 全局关闭 apphost 的 CET 影子栈兼容:规避 .NET 9 之后部分环境下的启动崩溃 -->
+    <CETCompat>false</CETCompat>
+  </PropertyGroup>
+</Project>
