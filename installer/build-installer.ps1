@@ -18,10 +18,13 @@ $installerDir = $PSScriptRoot
 $repoRoot = Split-Path -Parent $installerDir
 
 $flavor = "framework"
-$publishArgs = @("--self-contained", "false", "-p:DebugType=none")
+# -r win-x64 on BOTH flavors promotes rid-specific assets (native lua54, the win
+# System.IO.Ports/System.Management) flat into the output root, so the shared App
+# folder carries no runtimes\ tree and the installer installs a purely flat layout.
+$publishArgs = @("-r", "win-x64", "--self-contained", "false", "-p:DebugType=none")
 if ($SelfContained) {
     $flavor = "selfcontained"
-    $publishArgs = @("--self-contained", "true", "-r", "win-x64", "-p:DebugType=none")
+    $publishArgs = @("-r", "win-x64", "--self-contained", "true", "-p:DebugType=none")
 }
 
 $projects = @(

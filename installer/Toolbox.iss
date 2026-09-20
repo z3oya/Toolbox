@@ -67,6 +67,10 @@ Source: "publish\App\rtt-cli.exe"; DestDir: "{app}"; Components: rttcli; Flags: 
 Source: "publish\App\rtt-cli.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
 Source: "publish\App\rtt-cli.deps.json"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
 Source: "publish\App\rtt-cli.runtimeconfig.json"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
+; Lua binding for the script subcommand: NLua -> KeraLua -> native lua54
+Source: "publish\App\NLua.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
+Source: "publish\App\KeraLua.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
+Source: "publish\App\lua54.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.exe"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.deps.json"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
@@ -77,8 +81,9 @@ Source: "publish\App\Toolbox.Ui.WPF.dll"; DestDir: "{app}"; Components: examplew
 Source: "publish\App\Svg.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion
 Source: "publish\App\System.IO.Ports.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\ICSharpCode.AvalonEdit.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
-; deps.json prefers the rid=win asset over the root dll; the unix/mac native libs are dead weight on Windows and stay out
-Source: "publish\App\runtimes\win\*"; DestDir: "{app}\runtimes\win"; Components: serialassistant; Flags: ignoreversion recursesubdirs
+; Publish pins -r win-x64, so rid-specific assets (the win System.IO.Ports and
+; System.Management) are promoted flat into App; there is no runtimes\ tree to ship.
+Source: "publish\App\System.Management.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\ExCSS.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion
 Source: "publish\App\Assets\*"; DestDir: "{app}\Assets"; Components: example; Flags: recursesubdirs ignoreversion createallsubdirs
 
