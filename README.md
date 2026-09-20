@@ -49,6 +49,19 @@ install roots; pass ``--dll <path>`` otherwise) and a J-Link probe. Core flows:
 
 Data goes to stdout (pipeable), diagnostics to stderr; ``--eol``/``--encoding``/``--rtt-addr``/``--rtt-range``/``--sn`` refine the link, see ``--help``.
 
+### rtt-cli script (Lua automation)
+
+```
+rtt-cli script smoke.lua --chip STM32H743XI
+```
+
+`rtt` API: `send(text)` (appends `--eol`), `send_hex("DE AD")` (lossless binary TX), `log(line)`
+(stderr), `wait(ms)` -> new bytes as text (ASCII-reliable) or `""` (passive tap),
+`wait_hex(ms)` -> same window as hex text (byte-exact binary RX), `expect(pattern, ms=1000)` ->
+text through the match end (consuming), `now()`, `sleep(ms)`, `exit(code)`.
+Exit codes: 0 ok, 1 failure, 2 usage. First Ctrl+C asks the script to stop at the
+next rtt.* boundary, second Ctrl+C hard-exits.
+
 ## Package (installer with optional components)
 
 Requires Inno Setup 6 (``scoop install innosetup``).
