@@ -25,6 +25,12 @@ public sealed record RttConnectionConfig
     public uint RttRange { get; init; }
     /// <summary>Probe USB serial number; 0 selects the default (first) probe.</summary>
     public int SerialNo { get; init; }
+    /// <summary>RTT up/down channel pair index (0-15). Applies to both directions: the transport
+    /// reads this up-channel and writes the matching down-channel. 0 = default (SEGGER RTT spec
+    /// reserves up to 16 buffers per direction).</summary>
+    public int Channel { get; init; }
+    /// <summary>Inclusive upper bound for <see cref="Channel"/> (RTT spec: 16 buffers per direction).</summary>
+    public const int MaxChannel = 15;
     /// <summary>Explicit J-Link DLL path; empty auto-detects (bare name, then SEGGER install roots).</summary>
     public string DllPath { get; init; } = "";
 

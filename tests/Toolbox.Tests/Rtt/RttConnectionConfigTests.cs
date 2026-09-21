@@ -36,5 +36,6 @@ public class RttConnectionConfigTests
         Assert.Equal(0u, config.RttRange);
         Assert.Equal(0, config.SerialNo);      // 0 = default probe
         Assert.Equal(string.Empty, config.DllPath);
+        Assert.Equal(0, config.Channel);       // 0 = default up/down channel pair
     }
 }
