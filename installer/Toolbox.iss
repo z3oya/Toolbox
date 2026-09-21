@@ -2,7 +2,7 @@
 ; Build via installer\build-installer.ps1 (dotnet publish + ISCC)
 
 #define MyAppName "Toolbox"
-#define MyAppVersion "0.2.4"
+#define MyAppVersion "0.2.5"
 #define MyAppPublisher "Toolbox"
 
 ; Flavor is passed in by build-installer.ps1 (/DFlavor=...); default for manual compiles.
@@ -71,6 +71,9 @@ Source: "publish\App\rtt-cli.runtimeconfig.json"; DestDir: "{app}"; Components: 
 Source: "publish\App\NLua.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
 Source: "publish\App\KeraLua.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
 Source: "publish\App\lua54.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
+; CLI parser (managed, no native parts). Its localized satellites (cs\ de\ ...)
+; stay unshipped: the CLI surface is English-only by design.
+Source: "publish\App\System.CommandLine.dll"; DestDir: "{app}"; Components: rttcli; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.exe"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.dll"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.deps.json"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
