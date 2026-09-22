@@ -49,6 +49,30 @@ install roots; pass ``--dll <path>`` otherwise) and a J-Link probe. Core flows:
 
 Data goes to stdout (pipeable), diagnostics to stderr; ``--eol``/``--encoding``/``--rtt-addr``/``--rtt-range``/``--sn`` refine the link, see ``--help``.
 
+### Configuration file (--config)
+
+Repeating the same options on every invocation gets old: ``-c/--config`` loads option
+defaults from a JSON file. Without it, ``rtt-cli`` picks up ``./.rttsh.config.json``
+automatically when the file is present. Command-line arguments always win over file values.
+
+```json
+{
+  "chip": "STM32H743XI",
+  "channel": 1,
+  "speed": 4000,
+  "interface": "swd",
+  "encoding": "utf8",
+  "eol": "lf",
+  "rttAddr": "0x20000000"
+}
+```
+
+Settable keys mirror the CLI options in camelCase (``interface`` is what the help shows as ``--if``): ``chip``, ``speed``, ``interface``, ``rttAddr``,
+``rttRange`` (hex strings like ``"0x20000000"``), ``sn``, ``channel``, ``dll``,
+``encoding``, ``eol``, ``log``, ``wait``, ``scriptTimeout``. Unknown or misspelled keys
+are errors. ``hex``, ``tui``, ``reset`` and ``filter`` are deliberately not settable from
+a file.
+
 ### rtt-cli script (Lua automation)
 
 ```
