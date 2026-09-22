@@ -87,7 +87,9 @@ rtt-cli script --eval 'rtt.send("led r on"); rtt.expect("LED r on", 500)' --chip
 
 `--eval` is mutually exclusive with the file path; everything else (rtt.* API,
 options, exit codes) is identical. Errors report as ``eval:<line>:``. Run
-``rtt-cli script --manual`` for the full rtt.* reference.
+``rtt-cli manual`` for the full reference: configuration-file keys, the rtt.*
+API, and a script-writing guide (send/expect pairing, captures, negative
+assertions, pattern pitfalls).
 
 `rtt` API: `send(text)` (appends `--eol`), `send_hex("DE AD")` (lossless binary TX), `log(line)`
 (stderr), `wait(ms)` -> new bytes as text (ASCII-reliable) or `""` (passive tap),
