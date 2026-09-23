@@ -9,7 +9,7 @@ namespace Toolbox.Tests;
 /// the armlink .map says 0x24000070 / 168) and the negative path (GCC build without RTT).</summary>
 public class RttControlBlockElfTests
 {
-    private static ElfImage ImageWithCb(uint address, uint size, byte type = ElfBuilder.TypeObject) =>
+    private static ElfImage ImageWithCb(uint address = ElfTestSupport.KeilCbAddress, uint size = ElfTestSupport.KeilCbSize, byte type = ElfBuilder.TypeObject) =>
         ElfImage.Load(new ElfBuilder
         {
             Symbols = { new ElfBuilder.Sym(RttControlBlock.ControlBlockSymbolName, address, size, type, ElfBuilder.BindGlobal) },
@@ -22,9 +22,9 @@ public class RttControlBlockElfTests
     [InlineData(64u)]    // legacy, 1+1 - the absolute floor
     public void Resolves_plausible_control_blocks(uint size)
     {
-        RttElfLocateResult result = RttControlBlock.LocateFromElf(ImageWithCb(0x2400_0070, size));
+        RttElfLocateResult result = RttControlBlock.LocateFromElf(ImageWithCb(ElfTestSupport.KeilCbAddress, size));
         Assert.True(result.Resolved);
-        Assert.Equal(0x2400_0070u, result.Address);
+        Assert.Equal(ElfTestSupport.KeilCbAddress, result.Address);
     }
 
     [Theory]
@@ -93,12 +93,12 @@ public class RttControlBlockElfTests
         SymbolLookup lookup = image.Lookup(RttControlBlock.ControlBlockSymbolName);
         Assert.Equal(SymbolLookupStatus.Found, lookup.Status);
         Assert.True(lookup.TryGetSymbol(out ElfSymbol symbol));
-        Assert.Equal((0x2400_0070UL, 168UL, ElfSymbolKind.Object, ElfSymbolBinding.Global),
+        Assert.Equal(((ulong)ElfTestSupport.KeilCbAddress, ElfTestSupport.KeilCbSize, ElfSymbolKind.Object, ElfSymbolBinding.Global),
                      (symbol.Address, symbol.Size, symbol.Kind, symbol.Binding));
 
         RttElfLocateResult result = RttControlBlock.LocateFromElf(image);
         Assert.True(result.Resolved);
-        Assert.Equal(0x2400_0070u, result.Address);
+        Assert.Equal(ElfTestSupport.KeilCbAddress, result.Address);
     }
 
     [Fact]

@@ -128,7 +128,7 @@ public class ElfFixtureTests
         SymbolLookup lookup = image.Lookup(RttControlBlock.ControlBlockSymbolName);
         Assert.Equal(SymbolLookupStatus.Found, lookup.Status);
         Assert.True(lookup.TryGetSymbol(out ElfSymbol symbol));
-        Assert.Equal((0x2400_0070UL, 168UL), (symbol.Address, symbol.Size));
+        Assert.Equal(((ulong)ElfTestSupport.KeilCbAddress, ElfTestSupport.KeilCbSize), (symbol.Address, symbol.Size));
     }
 
     [Fact]
