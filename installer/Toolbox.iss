@@ -79,6 +79,8 @@ Source: "publish\App\SerialAssistant.dll"; DestDir: "{app}"; Components: seriala
 Source: "publish\App\SerialAssistant.deps.json"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\SerialAssistant.runtimeconfig.json"; DestDir: "{app}"; Components: serialassistant; Flags: ignoreversion
 Source: "publish\App\Toolbox.Core.dll"; DestDir: "{app}"; Components: example examplewpf funcgen rttcli serialassistant; Flags: ignoreversion
+; ELF reader behind Core's RTT symbol resolution (rtt-cli --elf); ships wherever Core does.
+Source: "publish\App\ELFSharp.dll"; DestDir: "{app}"; Components: example examplewpf funcgen rttcli serialassistant; Flags: ignoreversion
 Source: "publish\App\Toolbox.Ui.WinForms.dll"; DestDir: "{app}"; Components: example funcgen; Flags: ignoreversion
 Source: "publish\App\Toolbox.Ui.WPF.dll"; DestDir: "{app}"; Components: examplewpf; Flags: ignoreversion
 Source: "publish\App\Svg.dll"; DestDir: "{app}"; Components: example; Flags: ignoreversion
