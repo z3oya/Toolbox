@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The only package dependency of Core: the Elf submodule wraps it completely - ELFSharp
+         types never appear in Core's public surface (enforced by a reflection test). -->
+    <PackageReference Include="ELFSharp" Version="2.17.3" />
+  </ItemGroup>
+
 </Project>
