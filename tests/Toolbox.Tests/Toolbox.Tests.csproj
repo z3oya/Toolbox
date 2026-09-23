@@ -19,6 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ELF fixtures are test data: copied next to the test assembly so tests resolve them
+         via AppContext.BaseDirectory regardless of the working directory. -->
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Toolbox.Core\Toolbox.Core.csproj" />
     <ProjectReference Include="..\..\src\Tools\rtt-cli\rtt-cli.csproj" />
   </ItemGroup>
